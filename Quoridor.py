@@ -103,14 +103,38 @@ class Quoridor():
         if new_x < 0 or new_x >= self.w or new_y < 0 or new_y >= self.w:
             return PENALTY_REWARD, False
 
-        if action == 0 and self.wall_state[(x-1) + self.wall_width_cnt][y]:
-            return PENALTY_REWARD, False
-        elif action == 1 and self.wall_state[x + self.wall_width_cnt][y]:
-            return PENALTY_REWARD, False
-        elif action == 2 and self.wall_state[x][y-1]:
-            return PENALTY_REWARD, False
-        elif action == 3 and self.wall_state[x][y]:
-            return PENALTY_REWARD, False
+        if action == 0:
+            if x != 0:
+                if y == 0:
+                    if self.wall_state[x + self.wall_width_cnt-1][y]:
+                        return PENALTY_REWARD, False
+                else:
+                    if self.wall_state[x + self.wall_width_cnt-1][y-1] or self.wall_state[x + self.wall_width_cnt-1][y]:
+                        return PENALTY_REWARD, False
+        elif action == 1:
+            if x != self.w - 1:
+                if y == 0:
+                    if self.wall_state[x + self.wall_width_cnt][y]:
+                        return PENALTY_REWARD, False
+                else:
+                    if self.wall_state[x + self.wall_width_cnt][y-1] or self.wall_state[x + self.wall_width_cnt][y]:
+                        return PENALTY_REWARD, False
+        elif action == 2:
+            if y != 0:
+                if x == 0:
+                    if self.wall_state[x - 1][y]:
+                        return PENALTY_REWARD, False
+                else:
+                    if self.wall_state[x - 1][y] or self.wall_state[x - 2][y]:
+                        return PENALTY_REWARD, False
+        elif action == 3:
+            if y != self.w - 1:
+                if x == 0:
+                    if self.wall_state[x][y]:
+                        return PENALTY_REWARD, False
+                else:
+                    if self.wall_state[x][y] or self.wall_state[x - 1][y]:
+                        return PENALTY_REWARD, False
 
         self.player[num][0] = new_x
         self.player[num][1] = new_y
