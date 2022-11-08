@@ -326,7 +326,6 @@ if __name__ == '__main__':
             # action = random.randint(
             #     0, MOVE_CNT + column_WALL_CNT + ROW_WALL_CNT - 1)
             state, r, done = game.step(action)
-            game.render()
             # print(state, r, done)
             print(action)
             # input()

@@ -1,6 +1,6 @@
 # OSSP2 - Quoridor
 
-## Env 현황
+## Env 개발 현황
 
 ### 완료
 - PYGAME 렌더링
