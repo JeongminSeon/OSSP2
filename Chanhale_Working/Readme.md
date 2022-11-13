@@ -2,13 +2,15 @@
 
 started: 2022.11.04
 
-# 약속
+### ENV
+
+#### 약속
 
 모든 에이전트는 자신을 p1으로 인식.
 에이전트의 초기화시 env를 사용하여 자신의 정보를 초기화
 agent 초기화 방법: env.agent1, env.agent2 를 확인.
 두 값은 boolean 값으로, 이미 차지된 자리는 true 로 표기되어 있음.
-즉, false 로 표기된 자리가 비어다는 뜻.
+즉, false 로 표기된 자리가 비었다는 뜻.
 false 로 표기된 값을 true로 세팅하고, 에이전트에 자신이 몇번째 에이전트 자리를 차지했는지 int값으로 보관
 
 env 를 사용하는 거의 모든 함수의 첫번째 인자는 자신이 몇번째 에이전트인지에 대한 정보가 들어와야 함.
@@ -16,13 +18,13 @@ env 를 사용하는 거의 모든 함수의 첫번째 인자는 자신이 몇�
 step<br>
 get_state<br>
 
-### legal_action
+#### legal_action
 
 아마 많은 에이전트에서 필요로 할 것으로 보여 env 함수에 구현해두었습니다.
 입력값으로 state를 주면된다. state: (map, player_status)
 state 는 get_state 함수를 이용해 확인하길 바람. numpy array 2개로 이루어진 튜플입니다.
 
-### state
+#### state
 
 QuoridorEnv.get_state(agent_num) 을 통해 획득 가능.
 
@@ -43,7 +45,7 @@ QuoridorEnv.get_state(agent_num) 을 통해 획득 가능.
 	playerState[][1]: position_y<br>
 	playerState[][2]: wall_left
 
-### action 
+#### action 
 
 최초 약속대로 4 + (width - 1) * (width - 1) * 2 개수의 명령임.
 
@@ -60,7 +62,7 @@ QuoridorEnv.get_state(agent_num) 을 통해 획득 가능.
 * 3 + (width - 1) * (width - 1) ~ 3 + (width - 1) * (width - 1) * 2
 
 	세로로 벽을 설치
-	
+
 * 참고 그림
 
 	![img](/Chanhale_Working/etc/action_example.jpeg)
