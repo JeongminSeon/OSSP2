@@ -12,9 +12,9 @@ class Qnet(nn.Module):
     def __init__(self):
         super(Qnet, self).__init__()
         self.fc1 = nn.Linear(9, 128)
-        self.fc2 = nn.Linear(128, 256)
-        self.fc3 = nn.Linear(256, 256)
-        self.fc4 = nn.Linear(256, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.fc3 = nn.Linear(128, 128)
+        self.fc4 = nn.Linear(128, 128)
         self.fc5 = nn.Linear(128, 9)
 
     def forward(self, x):
@@ -37,13 +37,13 @@ class Qnet(nn.Module):
 env = TicTacToe()
 
 q = Qnet()
-q.load_state_dict(torch.load('DQN1.pth', map_location='cpu'))
+q.load_state_dict(torch.load('woocheol/DQN1.pth', map_location='cpu'))
 
 ai_win = 0
 
-for t in range(100):
+for t in range(1000):
     s = env.reset()
-    ai_turn = 1
+    ai_turn = 0
     while True:
         # env.render()
 
@@ -63,17 +63,29 @@ for t in range(100):
                     show_list.append(0)
 
             a = show_list.index(max(show_list))
+            print(show_list, a)
+            # a = int(input())
             s_prime, r, done = env.step(a)
+        print(s_prime, r, done)
 
         if done:
-            if (ai_turn == 1 and r == 1):
-                env.render()
-                print("AI Win!")
-                ai_win += 1
-                print("AI Win Rate: ", ai_win, t)
+            env.render()
+            if (ai_turn == 1):
+                if r == 1:
+                    print("AI Tie!")
+                    ai_win += 1
+                if r == 2:
+                    print("AI Win!")
+                    ai_win += 1
             else:
-                print("AI Lose!")
+                if r == 1:
+                    print("AI Tie!")
+                    ai_win += 1
+                if r == 2:
+                    print("AI Lose!")
             break
 
         ai_turn = 1 - ai_turn
         s = s_prime
+
+print("AI Win Rate: ", ai_win / 1000)
