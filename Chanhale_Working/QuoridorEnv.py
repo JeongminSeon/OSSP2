@@ -29,13 +29,14 @@ ACT_MOVE_EAST = 3
 
 class QuoridorEnv():
 
-    def __init__(self, width=5):
+    def __init__(self, width=5, value_mode=0):
         if (width > 10 or width < 4 or width % 2 == 0):
             raise Exception(
                 '게임판 생성 에러!\n게임판 조건: width < 10 and width > 4 and width % 2 == 1')
         self.width = width
         self.wall_map_width = width - 1
         self.wall_cnt = (width * width) // 8
+        self.value_mode = value_mode
         # wall_map_width * wall_map_width * 2 형식의 3차원 배열
         # map: [2][wall_map_width][wall_map_width]이다.
         # [0][][]: 가로로 배치된 벽
@@ -85,17 +86,31 @@ class QuoridorEnv():
             for y in range(width - 1):
                 # 가로 벽
                 if ((x != 0 and state[0][0][x-1][y]) or state[0][0][x][y] or state[0][1][x][y] or (x < (width - 2) and state[0][0][x+1][y])):
-                    ret[ACT_MOVE_CNT + x * y] = False
+                    ret[ACT_MOVE_CNT + y * (width - 1) + x] = False
                 # 새로 벽
                 if ((y != 0 and state[0][1][x][y-1]) or state[0][1][x][y] or state[0][0][x][y] or (y < (width - 2) and state[0][1][x][y+1])):
                     ret[ACT_MOVE_CNT + (width - 1) *
-                        (width - 1) + x * y] = False
+                        (width - 1) + y * (width - 1) + x] = False
 
+        # 경로 방해여부 검사
         for x in range(width - 1):
             for y in range(width - 1):
-                if (ret[ACT_MOVE_CNT + x * y]):
+                if (ret[ACT_MOVE_CNT + y * (width - 1) + x]):
                     tmp_map = state[0].copy()
                     tmp_map[0][x][y] = True
+                    if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
+                        ret[ACT_MOVE_CNT + y * (width - 1) + x] = False
+                if (ret[ACT_MOVE_CNT + (width - 1) * (width - 1) + y * (width - 1) + x]):
+                    tmp_map = state[0].copy()
+                    tmp_map[1][x][y] = True
+                    if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
+                        ret[ACT_MOVE_CNT + (width - 1) * (width - 1) +
+                            y * (width - 1) + x] = False
+        res = []
+        for i, j in enumerate(ret):
+            if j:
+                res.append(i)
+        return res
 
     def render(self, agent_num):
         state = None
@@ -190,12 +205,15 @@ class QuoridorEnv():
                 state[1][0][1] -= 1
             if (action == ACT_MOVE_EAST):
                 state[1][0][0] += 1
-        if (action < self.all_action.size):
+        elif (action < self.all_action.size):
             action -= ACT_MOVE_CNT
             state[0][action // ((width - 1) * (width - 1))][(action % ((width - 1)
                                                                        * (width - 1))) % (width - 1)][(action % ((width - 1) * (width - 1))) // (width - 1)] = True
-        self.map = state[0]
-        self.player_status = state[1]
+
+        if (agent_num != 1):
+            self.map, self.player_status = self.get_flipped_state(state)
+        else:
+            self.map, self.player_status = state
 
     def step_move(self, agent_num, action):
         if (agent_num != 1):
@@ -209,13 +227,22 @@ class QuoridorEnv():
         else:
             return (self.map, self.player_status)
 
-    def get_flipped_state(self):
-        flipped_map = np.flip(self.map.copy(), (1, 2))
-        flipped_p_status = np.flip(self.player_status.copy(), 0)
-        flipped_p_status[0][0] = self.width - 1 - flipped_p_status[0][0]
-        flipped_p_status[0][1] = self.width - 1 - flipped_p_status[0][1]
-        flipped_p_status[1][0] = self.width - 1 - flipped_p_status[1][0]
-        flipped_p_status[1][1] = self.width - 1 - flipped_p_status[1][1]
+    def get_flipped_state(self, state=""):
+        if state == "":
+            flipped_map = np.flip(self.map.copy(), (1, 2))
+            flipped_p_status = np.flip(self.player_status.copy(), 0)
+            flipped_p_status[0][0] = self.width - 1 - flipped_p_status[0][0]
+            flipped_p_status[0][1] = self.width - 1 - flipped_p_status[0][1]
+            flipped_p_status[1][0] = self.width - 1 - flipped_p_status[1][0]
+            flipped_p_status[1][1] = self.width - 1 - flipped_p_status[1][1]
+        else:
+            flipped_map = np.flip(state[0].copy(), (1, 2))
+            flipped_p_status = np.flip(state[1].copy(), 0)
+            flipped_p_status[0][0] = self.width - 1 - flipped_p_status[0][0]
+            flipped_p_status[0][1] = self.width - 1 - flipped_p_status[0][1]
+            flipped_p_status[1][0] = self.width - 1 - flipped_p_status[1][0]
+            flipped_p_status[1][1] = self.width - 1 - flipped_p_status[1][1]
+
         return (flipped_map, flipped_p_status)
 
     # state 를 보고 목적지까지 얼마나 멀리 떨어졌는지 판단
@@ -243,19 +270,19 @@ class QuoridorEnv():
                 # W
                 if (pos[0] != 0):
                     if(not reached_map[pos[0] - 1][pos[1]]):
-                        if(not(pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]])):
+                        if(not((pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]]))):
                             reached_map[pos[0] - 1][pos[1]] = True
                             next_stack.append((pos[0] - 1, pos[1]))
                 # S
                 if (pos[1] != 0):
                     if(not reached_map[pos[0]][pos[1] - 1]):
-                        if(not(pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1])):
+                        if(not((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1]))):
                             reached_map[pos[0]][pos[1] - 1] = True
                             next_stack.append((pos[0], pos[1] - 1))
                 # E
                 if (pos[0] < width - 1):
                     if(not reached_map[pos[0] + 1][pos[1]]):
-                        if(not(pos[1] != 0 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]])):
+                        if(not((pos[1] != 0 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]]))):
                             reached_map[pos[0] + 1][pos[1]] = True
                             next_stack.append((pos[0] + 1, pos[1]))
             # 종료상태에 도달한 것이 있는지 검사
@@ -284,25 +311,25 @@ class QuoridorEnv():
                 # N
                 if (pos[1] < width - 1):
                     if(not reached_map[pos[0]][pos[1] + 1]):
-                        if(not ((pos[0] != 0 and pos[1] < width - 1 and state[0][0][pos[0] - 1][pos[1]]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1]]))):
+                        if(not((pos[0] != 0 and pos[1] < width - 1 and state[0][0][pos[0] - 1][pos[1]]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1]]))):
                             reached_map[pos[0]][pos[1] + 1] = True
                             next_stack.append((pos[0], pos[1] + 1))
                 # W
                 if (pos[0] != 0):
                     if(not reached_map[pos[0] - 1][pos[1]]):
-                        if(not(pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]])):
+                        if(not((pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]]))):
                             reached_map[pos[0] - 1][pos[1]] = True
                             next_stack.append((pos[0] - 1, pos[1]))
                 # S
                 if (pos[1] != 0):
                     if(not reached_map[pos[0]][pos[1] - 1]):
-                        if(not(pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1])):
+                        if(not((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1]))):
                             reached_map[pos[0]][pos[1] - 1] = True
                             next_stack.append((pos[0], pos[1] - 1))
                 # E
                 if (pos[0] < (width - 1)):
                     if (not reached_map[pos[0] + 1][pos[1]]):
-                        if(not(pos[1] != 0 and pos[1] < width - 1 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]])):
+                        if(not((pos[1] != 0 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]]))):
                             reached_map[pos[0] + 1][pos[1]] = True
                             next_stack.append((pos[0] + 1, pos[1]))
             # 종료상태에 도달한 것이 있는지 검사
@@ -313,12 +340,23 @@ class QuoridorEnv():
         # 종료 상태에 도달할 수 없는 경우
         return (-1)
 
+    # get_value
+    def get_value(self, agent_num):
+
+        # 가장 간단한 value_function
+        if (self.value_mode == 0):
+            if (agent_num == 1):
+                TODO
+
 
 q = QuoridorEnv()
 q.step(1, 9)  # agent_1 이 action 10을 수행
-q.step(1, 11)  # agent_2 가 action 30을 수행
-q.step(1, 16)  # agent_2 가 action 30을 수행
+q.step(1, 11)
+q.step(1, 16)
+q.step(2, 0)
+q.step(2, 3)
+print(q.get_state(1))
 q.render(1)
-q.render(2)
 print(q.ask_how_far_opp(q.get_state(1)))
 print(q.ask_how_far(q.get_state(1)))
+print(q.get_legal_action())
