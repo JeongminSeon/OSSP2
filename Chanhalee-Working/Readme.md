@@ -62,7 +62,7 @@ QuoridorEnv.get_state(agent_num) 을 통해 획득 가능.
 
 * 참고 그림
 
-	![img](/Chanhale_Working/etc/action_example.jpeg)
+	![img](/Chanhalee-Working/etc/action_example.jpeg)
 
 #### 초기화
 
