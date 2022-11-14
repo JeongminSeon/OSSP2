@@ -1,7 +1,7 @@
 import numpy as np
 
-AGENT_1 = 0
-AGENT_2 = 1
+AGENT_1 = 100
+AGENT_2 = 200
 ACT_MOVE_CNT = 4
 ACT_MOVE_NORTH = 0
 ACT_MOVE_WEST = 1
@@ -32,11 +32,16 @@ class QuoridorEnv():
     def __init__(self, width=5, value_mode=0):
         if (width > 10 or width < 4 or width % 2 == 0):
             raise Exception(
-                '게임판 생성 에러!\n게임판 조건: width < 10 and width > 4 and width % 2 == 1')
+                'QuoridorEnv 초기화 에러!\nwidth 조건: width < 10 and width > 4 and width % 2 == 1')
+        if (value_mode > 4 and value_mode < 0):
+            raise Exception(
+                'QuoridorEnv 초기화 에러!\nvalue_mode 조건: value_mode >= 0 and value_mode < 5')
         self.width = width
         self.wall_map_width = width - 1
         self.wall_cnt = (width * width) // 8
         self.value_mode = value_mode
+        self.agent1 = False
+        self.agent2 = False
         # wall_map_width * wall_map_width * 2 형식의 3차원 배열
         # map: [2][wall_map_width][wall_map_width]이다.
         # [0][][]: 가로로 배치된 벽
@@ -49,6 +54,24 @@ class QuoridorEnv():
         # legal 여부와 상관 없이 취할 수 있는 모든 action의 집합 (nwse이동) + (wall 배치 동작 개수)
         self.all_action = np.array(
             [True] * (4 + self.wall_map_width * self.wall_map_width * 2))
+
+    def register_agent(self):
+        if not self.agent1:
+            self.agent1 = True
+            return AGENT_1
+        elif not self.agent2:
+            self.agent2 = True
+            return AGENT_2
+        else:
+            raise Exception(
+                '에이전트 등록 에러!\n3개 이상의 에이전트 등록 시도.')
+
+    def reset(self, width=-1, value_mode=-1):
+        if width == -1:
+            width = self.width
+        if value_mode == -1:
+            value_mode = self.value_mode
+        self.__init__(width=width, value_mode=value_mode)
 
     def get_legal_action(self, state=""):
         if (state == ""):
@@ -82,30 +105,37 @@ class QuoridorEnv():
 
         # 벽설치 가능 여부
         # 가로 벽
-        for x in range(width - 1):
-            for y in range(width - 1):
-                # 가로 벽
-                if ((x != 0 and state[0][0][x-1][y]) or state[0][0][x][y] or state[0][1][x][y] or (x < (width - 2) and state[0][0][x+1][y])):
-                    ret[ACT_MOVE_CNT + y * (width - 1) + x] = False
-                # 새로 벽
-                if ((y != 0 and state[0][1][x][y-1]) or state[0][1][x][y] or state[0][0][x][y] or (y < (width - 2) and state[0][1][x][y+1])):
-                    ret[ACT_MOVE_CNT + (width - 1) *
-                        (width - 1) + y * (width - 1) + x] = False
-
-        # 경로 방해여부 검사
-        for x in range(width - 1):
-            for y in range(width - 1):
-                if (ret[ACT_MOVE_CNT + y * (width - 1) + x]):
-                    tmp_map = state[0].copy()
-                    tmp_map[0][x][y] = True
-                    if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
+        if state[1][0][2] > 0:
+            for x in range(width - 1):
+                for y in range(width - 1):
+                    # 가로 벽
+                    if ((x != 0 and state[0][0][x-1][y]) or state[0][0][x][y] or state[0][1][x][y] or (x < (width - 2) and state[0][0][x+1][y])):
                         ret[ACT_MOVE_CNT + y * (width - 1) + x] = False
-                if (ret[ACT_MOVE_CNT + (width - 1) * (width - 1) + y * (width - 1) + x]):
-                    tmp_map = state[0].copy()
-                    tmp_map[1][x][y] = True
-                    if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
-                        ret[ACT_MOVE_CNT + (width - 1) * (width - 1) +
-                            y * (width - 1) + x] = False
+                    # 새로 벽
+                    if ((y != 0 and state[0][1][x][y-1]) or state[0][1][x][y] or state[0][0][x][y] or (y < (width - 2) and state[0][1][x][y+1])):
+                        ret[ACT_MOVE_CNT + (width - 1) *
+                            (width - 1) + y * (width - 1) + x] = False
+
+            # 경로 방해여부 검사
+            for x in range(width - 1):
+                for y in range(width - 1):
+                    if (ret[ACT_MOVE_CNT + y * (width - 1) + x]):
+                        tmp_map = state[0].copy()
+                        tmp_map[0][x][y] = True
+                        if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
+                            ret[ACT_MOVE_CNT + y * (width - 1) + x] = False
+                    if (ret[ACT_MOVE_CNT + (width - 1) * (width - 1) + y * (width - 1) + x]):
+                        tmp_map = state[0].copy()
+                        tmp_map[1][x][y] = True
+                        if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
+                            ret[ACT_MOVE_CNT + (width - 1) * (width - 1) +
+                                y * (width - 1) + x] = False
+        else:
+            for x in range(width - 1):
+                for y in range(width - 1):
+                    ret[ACT_MOVE_CNT + y * (width - 1) + x] = False
+                    ret[ACT_MOVE_CNT + (width - 1) * (width - 1) +
+                        y * (width - 1) + x] = False
         res = []
         for i, j in enumerate(ret):
             if j:
@@ -114,7 +144,7 @@ class QuoridorEnv():
 
     def render(self, agent_num):
         state = None
-        if (agent_num != 1):
+        if (agent_num != AGENT_1):
             state = self.get_flipped_state()
         else:
             state = (self.map, self.player_status)
@@ -151,13 +181,13 @@ class QuoridorEnv():
                 # 플레이어 배치하는 파트
                 # p1 의 위치는 빨간색으로 표기
                 if(state[1][0][0] == j and state[1][0][1] == i):
-                    if (agent_num == 1):
+                    if (agent_num == AGENT_1):
                         output.append('\033[42m' + ' 1 ' + '\033[0m')
                     else:
                         output.append('\033[44m' + ' 1 ' + '\033[0m')
                 # p2 의 위치는 파란색으로 표기
                 elif(state[1][1][0] == j and state[1][1][1] == i):
-                    if (agent_num == 1):
+                    if (agent_num == AGENT_1):
                         output.append('\033[44m' + ' 2 ' + '\033[0m')
                     else:
                         output.append('\033[42m' + ' 2 ' + '\033[0m')
@@ -191,7 +221,7 @@ class QuoridorEnv():
     def step(self, agent_num, action):
         state = None
         width = self.width
-        if (agent_num != 1):
+        if (agent_num != AGENT_1):
             state = self.get_flipped_state()
         else:
             state = (self.map, self.player_status)
@@ -205,12 +235,17 @@ class QuoridorEnv():
                 state[1][0][1] -= 1
             if (action == ACT_MOVE_EAST):
                 state[1][0][0] += 1
+        # 벽 배치하는 action
         elif (action < self.all_action.size):
+            if agent_num == AGENT_1:
+                state[1][0][2] -= 1
+            else:
+                state[1][1][2] -= 1
             action -= ACT_MOVE_CNT
             state[0][action // ((width - 1) * (width - 1))][(action % ((width - 1)
                                                                        * (width - 1))) % (width - 1)][(action % ((width - 1) * (width - 1))) // (width - 1)] = True
 
-        if (agent_num != 1):
+        if (agent_num != AGENT_1):
             self.map, self.player_status = self.get_flipped_state(state)
         else:
             self.map, self.player_status = state
@@ -219,13 +254,13 @@ class QuoridorEnv():
         return state, step_reward, step_done
 
     def step_move(self, agent_num, action):
-        if (agent_num != 1):
+        if (agent_num != AGENT_1):
             state = self.get_flipped_state()
         else:
             state = (self.map, self.player_status)
 
     def get_state(self, agent_num):
-        if (agent_num != 1):
+        if (agent_num != AGENT_1):
             return self.get_flipped_state()
         else:
             return (self.map, self.player_status)
@@ -367,7 +402,7 @@ class QuoridorEnv():
         # ex) 5 x 5 게임판에서 (1, 2): -2, (3, 4): 200, (4, 3): -1
         if(self.value_mode == 1):
             if(isItEnd == 0):
-                if(agent_num == 1):
+                if(agent_num == AGENT_1):
                     return 1 + self.player_status[0][1] - self.width
                 else:
                     return -self.player_status[1][1]
@@ -385,7 +420,7 @@ class QuoridorEnv():
         # 산식 reward = (상대의 end_line 과의 거리 (벽무시)) - (나의 end_line 과의 거리 (벽무시)) * 2 - 1
         if(self.value_mode == 2):
             if(isItEnd == 0):
-                if(agent_num == 1):
+                if(agent_num == AGENT_1):
                     return self.player_status[1][1] - (self.width - 1 - self.player_status[0][1]) * 2 - 1
                 else:
                     return self.width - 1 - self.player_status[0][1] - self.player_status[1][1] * 2 - 1
@@ -402,7 +437,7 @@ class QuoridorEnv():
         # 그 외  {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * -1
         if(self.value_mode == 3):
             if(isItEnd == 0):
-                if(agent_num == 1):
+                if(agent_num == AGENT_1):
                     return -self.ask_how_far((self.map, self.player_status))
                 else:
                     return -self.ask_how_far_opp((self.map, self.player_status))
@@ -419,7 +454,7 @@ class QuoridorEnv():
         # 그 외 {상대의 도착까지 남은 수} - {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * 2 -1
         if(self.value_mode == 4):
             if(isItEnd == 0):
-                if(agent_num == 1):
+                if(agent_num == AGENT_1):
                     return self.ask_how_far_opp((self.map, self.player_status)) - self.ask_how_far((self.map, self.player_status)) * 2 - 1
                 else:
                     return self.ask_how_far((self.map, self.player_status)) - self.ask_how_far_opp((self.map, self.player_status)) * 2 - 1
@@ -434,20 +469,23 @@ class QuoridorEnv():
 
     def ask_end_state(self, state):
         if(state[1][0][1] == self.width-1):
-            return 1
+            return AGENT_1
         elif (state[1][1][1] == 0):
-            return 2
+            return AGENT_2
         else:
             return 0
 
 
 q = QuoridorEnv(width=5, value_mode=1)
-print(q.step(1, 0))  # agent_1 이 action 10을 수행
-q.step(1, 11)
-q.step(1, 16)
-q.step(2, 0)
-print(q.step(2, 3))
-q.render(1)
+agent_1 = q.register_agent()
+agent_2 = q.register_agent()
+print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
+print(q.get_legal_action(q.get_state(agent_1)))
+q.step(agent_2, 0)
+q.step(agent_1, 11)
+q.step(agent_1, 16)
+q.step(agent_1, 19)
+q.render(agent_1)
 print(q.ask_how_far_opp(q.get_state(1)))
 print(q.ask_how_far(q.get_state(1)))
-print(q.get_legal_action())
+print(q.get_legal_action(q.get_state(agent_1)))
