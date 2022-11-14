@@ -11,11 +11,11 @@ import random
 class Qnet(nn.Module):
     def __init__(self):
         super(Qnet, self).__init__()
-        self.fc1 = nn.Linear(9, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, 128)
-        self.fc4 = nn.Linear(128, 128)
-        self.fc5 = nn.Linear(128, 9)
+        self.fc1 = nn.Linear(9*3, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc3 = nn.Linear(256, 256)
+        self.fc4 = nn.Linear(256, 256)
+        self.fc5 = nn.Linear(256, 9)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -37,7 +37,7 @@ class Qnet(nn.Module):
 env = TicTacToe()
 
 q = Qnet()
-q.load_state_dict(torch.load('woocheol/DQN1.pth', map_location='cpu'))
+q.load_state_dict(torch.load('woocheol/DQN3.pth', map_location='cpu'))
 
 ai_win = 0
 
@@ -52,7 +52,7 @@ for t in range(1000):
             s_prime, r, done = env.step(action)
             s = s_prime
         else:
-            obs = q.forward(torch.from_numpy(np.array(s)).float())
+            obs = q.forward(torch.from_numpy(np.array(s * 3)).float())
 
             available = env.available_actions()
             show_list = []
