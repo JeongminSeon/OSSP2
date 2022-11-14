@@ -15,17 +15,12 @@ ENV의 각종 메서드를 사용할때 고유번호를 env에 함께 넘기고,
 에이전트를 등록하는 절차는 QuoridorEnv.register_agent()를 통해 가능하며 반환값으로 에이전트는 agent_num을 받는다.<br>
 반환값은 int값이며 agent에 잘 보관해야한다.
 
-#### legal_action
-
-아마 많은 에이전트에서 필요로 할 것으로 보여 env 함수에 구현해두었습니다.
-입력값으로 state를 주면된다. state: (map, player_status)
-state 는 get_state 함수를 이용해 확인하길 바람. numpy array 2개로 이루어진 튜플입니다.
-
 ### state
 
 QuoridorEnv.get_state(agent_num) 을 통해 획득 가능.
 
-(map, playerState) 으로 구성된 튜플이 반환됨.
+(map, playerState) 으로 구성된 튜플이 반환됨.<br>
+map 과 playerState는 numpy.ndarray이다.
 
 * map
 
@@ -44,7 +39,7 @@ QuoridorEnv.get_state(agent_num) 을 통해 획득 가능.
 
 ### action 
 
-최초 약속대로 4 + (width - 1) * (width - 1) * 2 개수의 명령임.
+최초 약속대로 4 + (width - 1) * (width - 1) * 2 가지의 명령이 가능하다.
 
 즉, width = 5일 경우 0 ~ 35 범위의 action이 가능
 
@@ -64,7 +59,13 @@ QuoridorEnv.get_state(agent_num) 을 통해 획득 가능.
 
 	![img](/Chanhalee-Working/etc/action_example.jpeg)
 
-### 초기화
+### legal_action
+
+아마 많은 에이전트에서 필요로 할 것으로 보여 env 함수에 구현해두었다.
+입력값으로 state를 주면된다. state: (map, player_status)
+state 는 get_state 함수를 이용해 확인하길 바람. numpy array 2개로 이루어진 튜플입니다.
+
+### QuoridorEnv 초기화
 
 QuoridorEnv 의 초기화에 사용된다.<br>
 **__init__(width=5, value_mode=0)**
@@ -131,6 +132,8 @@ step을 진행하는 함수이다.<br>
 에이전트의 action을 받아서 env 내부의 state를 변화시키고,<br>
 action의 결과로 도착한 state와 해당 state의 value를 반환한다.<br>
 또한 해당 action의 결과로 게임이 끝났는지 여부도 반환한다.
+
+__반드시!! legal action만 입력되어야 한다!__
 
 return: state, step_reward, step_done<br>
 ```
