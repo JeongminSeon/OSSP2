@@ -214,6 +214,9 @@ class QuoridorEnv():
             self.map, self.player_status = self.get_flipped_state(state)
         else:
             self.map, self.player_status = state
+        step_reward = self.get_value(agent_num)
+        step_done = self.ask_end_state((self.map, self.player_status))
+        return state, step_reward, step_done
 
     def step_move(self, agent_num, action):
         if (agent_num != 1):
@@ -343,19 +346,107 @@ class QuoridorEnv():
     # get_value
     def get_value(self, agent_num):
 
-        # 가장 간단한 value_function
+        # 1.가장 간단한 value_function
+        # 승리시 150
+        # 패배시 -150
+        # 그외 -1
+        isItEnd = self.ask_end_state((self.map, self.player_status))
         if (self.value_mode == 0):
-            if (agent_num == 1):
-                TODO
+            if(isItEnd == 0):
+                return -1
+            elif (isItEnd == agent_num):
+                return 150
+            else:
+                return -150
+
+        # 2.약간 복잡한 value_function
+        # 승리시 100
+        # 패배시 -100
+        # 그외 y축 값에 따라 차등지급
+        # 산식: reward = ($도착 라인과 거리 (벽무시)) * -1
+        # ex) 5 x 5 게임판에서 (1, 2): -2, (3, 4): 200, (4, 3): -1
+        if(self.value_mode == 1):
+            if(isItEnd == 0):
+                if(agent_num == 1):
+                    return 1 + self.player_status[0][1] - self.width
+                else:
+                    return -self.player_status[1][1]
+            elif (isItEnd == agent_num):
+                return 100
+            else:
+                return -100
+
+        # 3.조금 더 복잡한 value_function
+        # 주의점: nq learning 할때 깊이를 충분히 깊게 탐색해야할 것. (아예 end state까지 탐색을 권장)
+        #           이 value_function을 도입한 에이전트는 티배깅(인성질)을 할 가능성이 있음...
+        # 승리시 1000
+        # 패배시 -1000
+        # 그 외 "상대와 나의" y축 값에 따라 차등지급
+        # 산식 reward = (상대의 end_line 과의 거리 (벽무시)) - (나의 end_line 과의 거리 (벽무시)) * 2 - 1
+        if(self.value_mode == 2):
+            if(isItEnd == 0):
+                if(agent_num == 1):
+                    return self.player_status[1][1] - (self.width - 1 - self.player_status[0][1]) * 2 - 1
+                else:
+                    return self.width - 1 - self.player_status[0][1] - self.player_status[1][1] * 2 - 1
+            elif (isItEnd == agent_num):
+                return 1000
+            else:
+                return -1000
+
+        # 4. 많이 복잡한 value_function
+        # 주의점: 연산량이 상당하기에 탐색 범위가 넓으면 학습에 상당한 시간이 걸릴 것임.
+        # 장점: 직관적으로 고개가 끄덕여지는 reward 를 반환.
+        # 승리시 1000
+        # 패배시 -1000
+        # 그 외  {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * -1
+        if(self.value_mode == 3):
+            if(isItEnd == 0):
+                if(agent_num == 1):
+                    return -self.ask_how_far((self.map, self.player_status))
+                else:
+                    return -self.ask_how_far_opp((self.map, self.player_status))
+            elif (isItEnd == agent_num):
+                return 1000
+            else:
+                return -1000
+
+        # 5. 아주 많이 복잡한 value_function
+        # 주의점: 연산량이 상당하기에 탐색 범위가 넓으면 학습에 상당한 시간이 걸릴 것임.
+        # 장점: 직관적으로 고개가 끄덕여지는 reward 를 반환.
+        # 승리시 1000
+        # 패배시 -1000
+        # 그 외 {상대의 도착까지 남은 수} - {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * 2 -1
+        if(self.value_mode == 4):
+            if(isItEnd == 0):
+                if(agent_num == 1):
+                    return self.ask_how_far_opp((self.map, self.player_status)) - self.ask_how_far((self.map, self.player_status)) * 2 - 1
+                else:
+                    return self.ask_how_far((self.map, self.player_status)) - self.ask_how_far_opp((self.map, self.player_status)) * 2 - 1
+            elif (isItEnd == agent_num):
+                return 1000
+            else:
+                return -1000
+
+    # 종료상태 여부를 확인하는 메서드
+    # 1: 입력된 state상에 state[1][0][]의 주인이 승리
+    # 2: 입력된 state상에 state[1][1][]의 주인이 승리
+
+    def ask_end_state(self, state):
+        if(state[1][0][1] == self.width-1):
+            return 1
+        elif (state[1][1][1] == 0):
+            return 2
+        else:
+            return 0
 
 
-q = QuoridorEnv()
-q.step(1, 9)  # agent_1 이 action 10을 수행
+q = QuoridorEnv(width=5, value_mode=1)
+print(q.step(1, 0))  # agent_1 이 action 10을 수행
 q.step(1, 11)
 q.step(1, 16)
 q.step(2, 0)
-q.step(2, 3)
-print(q.get_state(1))
+print(q.step(2, 3))
 q.render(1)
 print(q.ask_how_far_opp(q.get_state(1)))
 print(q.ask_how_far(q.get_state(1)))
