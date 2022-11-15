@@ -1,4 +1,6 @@
 import numpy as np
+from QuoridorGUI import QuoridorGUI
+
 
 AGENT_1 = 100
 AGENT_2 = 200
@@ -471,3 +473,5 @@ q.render(agent_1)
 print(q.ask_how_far_opp(q.get_state(1)))
 print(q.ask_how_far(q.get_state(1)))
 print(q.get_legal_action(q.get_state(agent_1)))
+g = QuoridorGUI(q)
+g.startGame()
