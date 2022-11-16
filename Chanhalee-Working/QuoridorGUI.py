@@ -2,6 +2,14 @@ import random
 import pygame
 import sys
 from pygame.locals import *
+from QuoridorEnv import QuoridorEnv
+
+#  QuoridorEnv와 동기화가 필요한 항목들
+ACT_MOVE_CNT = 4
+ACT_MOVE_NORTH = 0
+ACT_MOVE_WEST = 1
+ACT_MOVE_SOUTH = 2
+ACT_MOVE_EAST = 3
 
 FPS = 30  # frames per second, the general speed of the program
 
@@ -32,22 +40,60 @@ OVAL = 'oval'
 
 
 class QuoridorGUI():
-    def __init__(self, env):
+    def __init__(self, env, agent_num1=-1, agent_num2=-1):
+        self.input_action = [-1, -1]
         pygame.init()
-        self.WINDOWWIDTH = 640  # size of window's width in pixels
-        self.WINDOWHEIGHT = 480  # size of windows' height in pixels
         self.BOXSIZE = 40  # size of box height & width in pixels
         self.GAPSIZE = 15  # size of gap between boxes in pixels
         self.width = env.width
         self.env = env
+        self.game_done = False
+        self.XMARGIN = 80
+        self.YMARGIN = 40
+        self.WINDOWWIDTH = (self.BOXSIZE + self.GAPSIZE) * \
+            self.width + self.XMARGIN * 2 - self.GAPSIZE
+        self.WINDOWHEIGHT = (self.BOXSIZE + self.GAPSIZE) * \
+            self.width + self.YMARGIN * 2 - self.GAPSIZE
         self.FPSCLOCK = pygame.time.Clock()
         self.DISPLAYSURF = pygame.display.set_mode(
             (self.WINDOWWIDTH, self.WINDOWHEIGHT))
-        self.XMARGIN = int(
-            (self.WINDOWWIDTH - (self.width * (self.BOXSIZE + self.GAPSIZE))) / 2)
-        self.YMARGIN = int(
-            (self.WINDOWHEIGHT - (self.width * (self.BOXSIZE + self.GAPSIZE))) / 2)
-
+        self.player1_on = False
+        self.player2_on = False
+        self.player1_num = -1
+        self.player2_num = -1
+        if agent_num1 != -1:
+            if env.agNumList[0] == agent_num1:
+                self.player1_on = True
+                self.player1_num = agent_num1
+            elif env.agNumList[1] == agent_num1:
+                self.player2_on = True
+                self.player2_num = agent_num1
+            else:
+                raise Exception('QuoridorGUI 초기화 에러!\n잘못된 agent_num1 전달')
+        if agent_num2 != -1:
+            if env.agNumList[0] == agent_num2:
+                self.player1_on = True
+                self.player1_num = agent_num2
+            elif env.agNumList[1] == agent_num2:
+                self.player2_on = True
+                self.player2_num = agent_num2
+            else:
+                raise Exception('QuoridorGUI 초기화 에러!\n잘못된 agent_num2 전달')
+        if self.player1_on and self.player2_on:
+            if env.last_played == self.player1_num:  # agent2 가 다음 플레이어일 경우
+                self.legal_action = env.get_legal_action(
+                    env.get_state(self.player2_num))
+            else:
+                self.legal_action = env.get_legal_action(
+                    env.get_state(self.player1_num))
+        elif self.player1_on:
+            self.legal_action = env.get_legal_action(
+                env.get_state(self.player1_num))
+        elif self.player2_on:
+            self.legal_action = env.get_legal_action(
+                env.get_state(self.player2_num))
+        else:
+            self.legal_action = None
         self.mousex = 0  # used to store x coordinate of mouse event
         self.mousey = 0  # used to store y coordinate of mouse event
         self.oldMousex = 0  # used to store x coordinate of mouse event
@@ -61,7 +107,7 @@ class QuoridorGUI():
         self.DISPLAYSURF.fill(BGCOLOR)
 
     def startGame(self):
-        while True:  # main game loop
+        while not self.game_done:  # main game loop
             self.mouseUp = False
             self.DISPLAYSURF.fill(BGCOLOR)  # drawing the window
             self.drawBoard()
@@ -85,19 +131,26 @@ class QuoridorGUI():
                     self.mousex, self.mousey = event.pos
                     self.mouseUp = True
                     self.mouseDown = False
+            if self.env.ask_state_changed():
+                self.updateLegalActionAndState()
             boxx, boxy, third_element = self.getObjAtPixel(
                 self.oldMousex, self.oldMousey, self.mousex, self.mousey)
             if third_element != -1:
-                # The mouse is currently over a box.
-                if third_element == 1 or third_element == 2:
-                    self.drawHighlightWall(boxx, boxy, third_element)
-                    self.drawHighlightBox(boxx, boxy)
-                if third_element == 0:
-                    self.drawHighlightBox(boxx, boxy)
-
-                    # Redraw the screen and wait a clock tick.
+                # if cursor is on legal object
+                if self.checkObjLegalAndGetMove(boxx, boxy, third_element):
+                    # The mouse is currently over a empty_wall.
+                    if third_element == 1 or third_element == 2:
+                        self.drawHighlightWall(boxx, boxy, third_element)
+                    # The mouse is currently over a box.
+                    elif third_element == 0:
+                        self.drawHighlightBox(boxx, boxy)
+                    # 착수
+                    if self.mouseUp:
+                        self.confirmMove(boxx, boxy, third_element)
+                        self.updateLegalActionAndState()
             pygame.display.update()
             self.FPSCLOCK.tick(FPS)
+        self.gameWonAnimation()
 
     def generateStartingPos(self, val):
         player_map = []
@@ -105,43 +158,13 @@ class QuoridorGUI():
             player_map.append([val] * self.width)
         return player_map
 
-    def getRandomizedBoard():
-        # Get a list of every possible shape in every possible color.
-        icons = []
-        for color in ALLCOLORS:
-            for shape in ALLSHAPES:
-                icons.append((shape, color))
-
-        random.shuffle(icons)  # randomize the order of the icons list
-        # calculate how many icons are needed
-        numIconsUsed = int(self.width * self.width / 2)
-        icons = icons[:numIconsUsed] * 2  # make two of each
-        random.shuffle(icons)
-
-        # Create the board data structure, with randomly placed icons.
-        board = []
-        for x in range(self.width):
-            column = []
-            for y in range(self.width):
-                column.append(icons[0])
-                del icons[0]  # remove the icons as we assign them
-            board.append(column)
-        return board
-
-    def splitIntoGroupsOf(groupSize, theList):
-        # splits a list into a list of lists, where the inner lists have at
-        # most groupSize number of items.
-        result = []
-        for i in range(0, len(theList), groupSize):
-            result.append(theList[i:i + groupSize])
-        return result
-
     def leftTopCoordsOfBox(self, boxx, boxy):
         # Convert board coordinates to pixel coordinates
         left = boxx * (self.BOXSIZE + self.GAPSIZE) + self.XMARGIN
         top = boxy * \
             (self.BOXSIZE + self.GAPSIZE) + self.YMARGIN
         return (left, top)
+
     def leftTopCoordsOfBoxFlipped(self, boxx, boxy):
         # Convert board coordinates to pixel coordinates
         left = boxx * (self.BOXSIZE + self.GAPSIZE) + self.XMARGIN
@@ -153,9 +176,10 @@ class QuoridorGUI():
         # Convert board coordinates to pixel coordinates
         left = boxx * (self.BOXSIZE + self.GAPSIZE) + \
             self.XMARGIN + self.BOXSIZE
-        top = boxy* (self.BOXSIZE +
-                                         self.GAPSIZE) + self.YMARGIN + self.BOXSIZE
+        top = boxy * (self.BOXSIZE +
+                      self.GAPSIZE) + self.YMARGIN + self.BOXSIZE
         return (left, top)
+
     def leftTopCoordsOfWallCenterFlipped(self, boxx, boxy):
         # Convert board coordinates to pixel coordinates
         left = boxx * (self.BOXSIZE + self.GAPSIZE) + \
@@ -191,7 +215,6 @@ class QuoridorGUI():
         y_c = False
         if x < 0 or y < 0 or x_a > self.width - 1 or y_a > self.width - 1:
             return (0, 0, -1)
-        print(x_a, y_a)
         if x_b > self.BOXSIZE:
             x_c = True
         if y_b > self.BOXSIZE:
@@ -268,19 +291,14 @@ class QuoridorGUI():
         # 둘이 같은 위치에 있을 경우
         if (env.player_status[0][0] == env.player_status[1][0] and env.player_status[0][1] == env.player_status[1][1]):
             ret[env.player_status[1][0]][env.player_status[1][1]] = 3
-
         return ret
-
-    def getShapeAndColor(self, board, boxx, boxy):
-        # shape value for x, y spot is stored in board[x][y][0]
-        # color value for x, y spot is stored in board[x][y][1]
-        return board[boxx][boxy][0], board[boxx][boxy][1]
 
     def drawBoard(self):
         # player가 설 수 있는 위치들을 그림
         for boxx in range(self.width):
             for boxy in range(self.width):
-                left, top = self.leftTopCoordsOfBoxFlipped(boxx, boxy)
+                left, top = self.leftTopCoordsOfBox(
+                    boxx, self.width - 1 - boxy)
                 pygame.draw.rect(self.DISPLAYSURF, GRAY,
                                  (left, top, self.BOXSIZE, self.BOXSIZE))
                 if self.player_map[boxx][boxy] == 1:
@@ -300,14 +318,14 @@ class QuoridorGUI():
                 if self.wall_map[0][boxx][boxy]:
                     left = self.XMARGIN + (self.BOXSIZE + self.GAPSIZE) * boxx
                     top = self.YMARGIN + (self.BOXSIZE + self.GAPSIZE) * \
-                        (self.width - boxy - 1) + self.BOXSIZE
+                        (self.width - 2 - boxy) + self.BOXSIZE
                     pygame.draw.rect(self.DISPLAYSURF, ORANGE, (left + 5,
                                                                 top + 5, self.BOXSIZE + self.GAPSIZE + self.BOXSIZE - 10, self.GAPSIZE - 10), 0)
                 if self.wall_map[1][boxx][boxy]:
                     left = self.XMARGIN + \
                         (self.BOXSIZE + self.GAPSIZE) * boxx + self.BOXSIZE
                     top = self.YMARGIN + \
-                        (self.BOXSIZE + self.GAPSIZE) * (self.width - boxy - 1)
+                        (self.BOXSIZE + self.GAPSIZE) * (self.width - boxy - 2)
                     pygame.draw.rect(self.DISPLAYSURF, ORANGE, (left + 5,
                                                                 top + 5, self.GAPSIZE - 10, self.BOXSIZE + self.GAPSIZE + self.BOXSIZE - 10), 0)
 
@@ -345,15 +363,164 @@ class QuoridorGUI():
             revealBoxesAnimation(board, boxGroup)
             coverBoxesAnimation(board, boxGroup)
 
-    def gameWonAnimation(self, board):
+    def gameWonAnimation(self):
         # flash the background color when the player has won
-        coveredBoxes = generateRevealedBoxesData(True)
         color1 = LIGHTBGCOLOR
         color2 = BGCOLOR
 
-        for i in range(13):
+        for i in range(10):
             color1, color2 = color2, color1  # swap colors
             self.DISPLAYSURF.fill(color1)
-            drawBoard(board, coveredBoxes)
             pygame.display.update()
             pygame.time.wait(300)
+
+    def updateLegalActionAndState(self):
+        if self.player1_on and self.player2_on:
+            if self.env.last_played == self.player1_num:  # agent2 가 다음 플레이어일 경우
+                self.legal_action = self.env.get_legal_action(
+                    self.env.get_state(self.player2_num))
+            else:
+                self.legal_action = self.env.get_legal_action(
+                    self.env.get_state(self.player1_num))
+        elif self.player1_on:
+            self.legal_action = self.env.get_legal_action(
+                self.env.get_state(self.player1_num))
+        elif self.player2_on:
+            self.legal_action = self.env.get_legal_action(
+                env.get_state(self.player2_num))
+        else:
+            self.legal_action = None
+        self.wall_map = self.env.map
+        self.player_map = self.getPlayerMap(self.env)
+
+    def checkObjLegalAndGetMove(self, boxx, boxy, third_element):
+        width = self.width
+        playerNo = -1  # 플레이 가능한 플레이어의 number 에 대한 변수
+        if self.player1_on and self.env.last_played == self.player2_num:  # player1의 입장에서 Legal 여부 판단
+            playerNo = 1
+            x = boxx
+            if third_element == 2 or third_element == 1:  # 벽설치의 경우 변환이 조금 다름.
+                y = width - 2 - boxy
+            else:
+                y = width - 1 - boxy
+        if self.player2_on and self.env.last_played == self.player1_num:  # player1의 입장에서 Legal 여부 판단
+            playerNo = 2
+            x = boxx
+            if third_element == 2 or third_element == 1:  # 벽설치의 경우 변환이 조금 다름.
+                y = width - 2 - boxy
+            else:
+                y = width - 1 - boxy
+
+        # p1의 차례로 player1의 입장에서 Legal 여부 판단
+        if playerNo == 1:
+            if third_element == 0:  # 움직임 관련
+                # 북진 가능 N
+                if y > 0:
+                    if self.player_map[x][y - 1] == playerNo or self.player_map[x][y - 1] == 3:
+                        if ACT_MOVE_NORTH in self.legal_action:
+                            self.input_action = [
+                                self.player1_num, ACT_MOVE_NORTH]
+                            return True
+                # 서진 가능 W
+                if x < width - 1:
+                    if self.player_map[x + 1][y] == playerNo or self.player_map[x + 1][y] == 3:
+                        if ACT_MOVE_WEST in self.legal_action:
+                            self.input_action = [
+                                self.player1_num, ACT_MOVE_WEST]
+                            return True
+                # 남진 가능 S
+                if y < width - 1:
+                    if self.player_map[x][y + 1] == playerNo or self.player_map[x][y + 1] == 3:
+                        if ACT_MOVE_SOUTH in self.legal_action:
+                            self.input_action = [
+                                self.player1_num, ACT_MOVE_SOUTH]
+                            return True
+                # 동진 가능 E
+                if x > 0:
+                    if self.player_map[x - 1][y] == playerNo or self.player_map[x - 1][y] == 3:
+                        if ACT_MOVE_EAST in self.legal_action:
+                            self.input_action = [
+                                self.player1_num, ACT_MOVE_EAST]
+                            return True
+            # 가로 벽
+            elif third_element == 1:
+                if x + (y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
+                    self.input_action = [self.player1_num,
+                                         x + (y) * (width - 1) + ACT_MOVE_CNT]
+                    return True
+            elif third_element == 2:
+                if x + (width - 1) * (width - 1) + (y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
+                    self.input_action = [
+                        self.player1_num, x + (width - 1) * (width - 1) + (y) * (width - 1) + ACT_MOVE_CNT]
+                    return True
+        # player 2의 차례로 p2 관점에서 관찰
+        elif playerNo == 2:
+            if third_element == 0:  # 움직임 관련
+                # 북진 가능 N
+                if y < width - 1:
+                    if self.player_map[x][y + 1] == playerNo or self.player_map[x][y + 1] == 3:
+                        if ACT_MOVE_NORTH in self.legal_action:
+                            self.input_action = [
+                                self.player2_num, ACT_MOVE_NORTH]
+                            return True
+                # 서진 가능 W
+                if x > 0:
+                    if self.player_map[x - 1][y] == playerNo or self.player_map[x - 1][y] == 3:
+                        if ACT_MOVE_WEST in self.legal_action:
+                            self.input_action = [
+                                self.player2_num, ACT_MOVE_WEST]
+                            return True
+                # 남진 가능 S
+                if y > 0:
+                    if self.player_map[x][y - 1] == playerNo or self.player_map[x][y - 1] == 3:
+                        if ACT_MOVE_SOUTH in self.legal_action:
+                            self.input_action = [
+                                self.player2_num, ACT_MOVE_SOUTH]
+                            return True
+                # 동진 가능 E
+                if x < width - 1:
+                    if self.player_map[x + 1][y] == playerNo or self.player_map[x + 1][y] == 3:
+                        if ACT_MOVE_EAST in self.legal_action:
+                            self.input_action = [
+                                self.player2_num, ACT_MOVE_EAST]
+                            return True
+            # 가로 벽
+            elif third_element == 1:
+                if (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
+                    self.input_action = [
+                        self.player2_num, x + (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
+                    return True
+            elif third_element == 2:
+                if (width - 2 - x) + (width - 1) * (width - 1) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
+                    self.input_action = [self.player2_num, (width - 2 - x) + (width - 1) * (
+                        width - 1) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
+                    return True
+        return False
+
+    def confirmMove(self, boxx, boxy, third_element):
+        state, reward, done = self.env.step(
+            self.input_action[0], self.input_action[1])
+        if self.input_action[0] == self.player1_num:
+            print("플레이어 1의 ", end="")
+        if self.input_action[0] == self.player2_num:
+            print("플레이어 2의 ", end="")
+        print("action", self.input_action[1], "의 보상", reward)
+        self.game_done = done
+
+
+q = QuoridorEnv(width=5, value_mode=1)
+agent_1 = q.register_agent()
+agent_2 = q.register_agent()
+print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
+print(q.get_legal_action(q.get_state(agent_1)))
+q.step(agent_2, 0)
+q.step(agent_1, 19)
+q.step(agent_1, 5)
+q.step(agent_2, 0)
+q.step(agent_1, 0)
+q.render(agent_1)
+print(q.ask_how_far_opp(q.get_state(agent_1)))
+print(q.ask_how_far(q.get_state(agent_1)))
+print(q.get_legal_action(q.get_state(agent_1)))
+g = QuoridorGUI(q, agent_1, agent_2)
+g.startGame()

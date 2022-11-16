@@ -1,5 +1,4 @@
 import numpy as np
-from QuoridorGUI import QuoridorGUI
 
 
 AGENT_1 = 100
@@ -26,6 +25,9 @@ class QuoridorEnv():
         self.value_mode = value_mode
         self.agent1 = False
         self.agent2 = False
+        self.last_played = AGENT_2
+        self.state_changed = True
+        self.agNumList = [AGENT_1, AGENT_2]
         # wall_map_width * wall_map_width * 2 형식의 3차원 배열
         # map: [2][wall_map_width][wall_map_width]이다.
         # [0][][]: 가로로 배치된 벽
@@ -127,6 +129,9 @@ class QuoridorEnv():
         return res
 
     def render(self, agent_num):
+        if (agent_num != AGENT_1 and agent_num != AGENT_2):
+            raise Exception(
+                'QuoridorEnv- agent_num 에러!\n잘못된 agent_num을 입력하였음!')
         state = None
         if (agent_num != AGENT_1):
             state = self.get_flipped_state()
@@ -203,6 +208,10 @@ class QuoridorEnv():
         print(''.join(output))
 
     def step(self, agent_num, action):
+        if (agent_num != AGENT_1 and agent_num != AGENT_2):
+            raise Exception(
+                'QuoridorEnv- agent_num 에러!\n잘못된 agent_num을 입력하였음!')
+        self.last_played = agent_num
         state = None
         width = self.width
         if (agent_num != AGENT_1):
@@ -235,15 +244,22 @@ class QuoridorEnv():
             self.map, self.player_status = state
         step_reward = self.get_value(agent_num)
         step_done = self.ask_end_state((self.map, self.player_status))
+        self.state_changed = True
         return state, step_reward, step_done
 
     def step_move(self, agent_num, action):
+        if (agent_num != AGENT_1 and agent_num != AGENT_2):
+            raise Exception(
+                'QuoridorEnv- agent_num 에러!\n잘못된 agent_num을 입력하였음!')
         if (agent_num != AGENT_1):
             state = self.get_flipped_state()
         else:
             state = (self.map, self.player_status)
 
     def get_state(self, agent_num):
+        if (agent_num != AGENT_1 and agent_num != AGENT_2):
+            raise Exception(
+                'QuoridorEnv- agent_num 에러!\n잘못된 agent_num을 입력하였음!')
         if (agent_num != AGENT_1):
             return self.get_flipped_state()
         else:
@@ -364,7 +380,9 @@ class QuoridorEnv():
 
     # get_value
     def get_value(self, agent_num):
-
+        if (agent_num != AGENT_1 and agent_num != AGENT_2):
+            raise Exception(
+                'QuoridorEnv- agent_num 에러!\n잘못된 agent_num을 입력하였음!')
         # 1.가장 간단한 value_function
         # 승리시 150
         # 패배시 -150
@@ -459,19 +477,25 @@ class QuoridorEnv():
         else:
             return 0
 
+    def ask_state_changed(self):
+        return self.state_changed
 
-q = QuoridorEnv(width=5, value_mode=1)
-agent_1 = q.register_agent()
-agent_2 = q.register_agent()
-print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
-print(q.get_legal_action(q.get_state(agent_1)))
-q.step(agent_2, 0)
-q.step(agent_1, 11)
-q.step(agent_1, 16)
-q.step(agent_1, 19)
-q.render(agent_1)
-print(q.ask_how_far_opp(q.get_state(1)))
-print(q.ask_how_far(q.get_state(1)))
-print(q.get_legal_action(q.get_state(agent_1)))
-g = QuoridorGUI(q)
-g.startGame()
+    def set_state_changed_false(self):
+        self.state_changed = False
+
+
+# q = QuoridorEnv(width=5, value_mode=1)
+# agent_1 = q.register_agent()
+# agent_2 = q.register_agent()
+# print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
+# print(q.get_legal_action(q.get_state(agent_1)))
+# q.step(agent_2, 0)
+# q.step(agent_1, 11)
+# q.step(agent_1, 16)
+# q.step(agent_1, 19)
+# q.render(agent_1)
+# print(q.ask_how_far_opp(q.get_state(agent_1)))
+# print(q.ask_how_far(q.get_state(agent_1)))
+# print(q.get_legal_action(q.get_state(agent_1)))
+# g = QuoridorGUI(q)
+# g.startGame()
