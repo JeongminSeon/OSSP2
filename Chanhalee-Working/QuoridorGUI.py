@@ -348,28 +348,13 @@ class QuoridorGUI():
             pygame.draw.rect(self.DISPLAYSURF, HIGHLIGHTCOLOR, (left + 5,
                                                                 top + 5, self.GAPSIZE - 10, self.BOXSIZE + self.GAPSIZE + self.BOXSIZE - 10), 0)
 
-    def startGameAnimation(self, board):
-        # Randomly reveal the boxes 8 at a time.
-        coveredBoxes = generateRevealedBoxesData(False)
-        boxes = []
-        for x in range(self.width):
-            for y in range(self.width):
-                boxes.append((x, y))
-        random.shuffle(boxes)
-        boxGroups = splitIntoGroupsOf(8, boxes)
-
-        drawBoard(board, coveredBoxes)
-        for boxGroup in boxGroups:
-            revealBoxesAnimation(board, boxGroup)
-            coverBoxesAnimation(board, boxGroup)
-
     def gameWonAnimation(self):
         # flash the background color when the player has won
         color1 = LIGHTBGCOLOR
         color2 = BGCOLOR
 
         for i in range(10):
-            color1, color2 = color2, color1  # swap colors
+            color1, color2 = color2, color1  # swap
             self.DISPLAYSURF.fill(color1)
             pygame.display.update()
             pygame.time.wait(300)

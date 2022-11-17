@@ -2,6 +2,12 @@
 
 started: 2022.11.04
 
+ENV start: 2022.11.12<br>
+ENV Finish: 2022.11.14
+
+GUI started: 2022.11.15<br>
+GUI finished: 2022.11.16
+
 ## ENV
 
 ### 동작 개요
