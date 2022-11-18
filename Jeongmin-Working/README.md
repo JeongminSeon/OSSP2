@@ -4,23 +4,24 @@
 
 # MCTS(Monte Carlo Tree Search)
 
-### 알고리즘 설명
-
-
-- select
+- Selection
     - 처음에는 
     <br/>![img](/Jeongmin-Working/img/mcts_selection.png) 
     
-- expand
+- Expansion
     - ![img](/Jeongmin-Working/img/mcts_expansion.png) 
 
-- simulation
+- Simulation (= Rollout)
     - ![img](/Jeongmin-Working/img/mcts_simulation.png) 
 
-- backpropagation
+- Backpropagation
     - ![img](/Jeongmin-Working/img/mcts_backprop.png) 
 
+## 알고리즘 설명
 
+
+
+# 구현
 
 ## 함수 목록
 
@@ -39,6 +40,8 @@
 ### http://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
 
 ### https://www.youtube.com/watch?v=UXW2yZndl7U&t=27s
+
+### https://www.youtube.com/watch?v=xmImNoDc9Z4
 
 ## 참고 OSS
 
