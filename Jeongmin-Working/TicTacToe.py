@@ -1,6 +1,6 @@
 
 from copy import deepcopy
-from mcts1 import *
+from mcts import *
 
 # Tic Tac Toe board class
 class Board():
@@ -222,5 +222,27 @@ if __name__ == '__main__':
     # create board instance
     board = Board()
     
-    # start game loop
-    board.game_loop()
+    root = TreeNode(board, None)
+    # root.visits = 6
+    # root.score = 6
+
+    # move_1 = TreeNode(board.generate_states()[0], root)
+    # move_1.visits = 4
+    # move_1.score = 4
+
+    # move_2 = TreeNode(board.generate_states()[1], root)
+    # move_2.visits = 2
+    # move_2.score = 2
+
+    # root.children = {
+    #     'child_1' : move_1,
+    #     'child_2' : move_2
+    # }
+
+    mcts = MCTS()
+
+    mcts.expand(root)
+    # print(board.generate_states()[4])
+    # best_move = mcts.get_best_move(root, 0)
+    # print(best_move.score)
+    # print(best_move.visits)
