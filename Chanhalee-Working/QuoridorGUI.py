@@ -496,12 +496,7 @@ class QuoridorGUI():
 q = QuoridorEnv(width=5, value_mode=1)
 agent_1 = q.register_agent()
 agent_2 = q.register_agent()
-print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
 print(q.get_legal_action(q.get_state(agent_1)))
-q.step(agent_2, 0)
-q.step(agent_1, 19)
-q.step(agent_1, 5)
-q.step(agent_2, 0)
 q.step(agent_1, 0)
 q.render(agent_1)
 print(q.ask_how_far_opp(q.get_state(agent_1)))

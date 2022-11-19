@@ -89,17 +89,19 @@ QuoridorEnv 의 초기화에 사용된다.<br>
 
 ### 함수 목록
 
-* register_agent()
-* reset(width=-1, value_mode=-1)
-* get_legal_action(state)
-* render(agent_num)
-* step(agent_num, action)
-* get_state(agent_num)
-* get_flipped_state(state)
-* ask_how_far(state)
-* ask_how_far_opp(state)
-* get_value(agent_num)
-* ask_end_state(state)
+```
+register_agent()
+reset(width=-1, value_mode=-1)
+get_legal_action(state)
+render(agent_num)
+step(agent_num, action)
+get_state(agent_num)
+get_flipped_state(state)
+ask_how_far(state)
+ask_how_far_opp(state)
+get_value(agent_num)
+ask_end_state(state)
+```
 
 #### register_agent()
 
