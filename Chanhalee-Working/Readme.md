@@ -2,6 +2,12 @@
 
 started: 2022.11.04
 
+ENV start: 2022.11.12<br>
+ENV Finish: 2022.11.14
+
+GUI started: 2022.11.15<br>
+GUI finished: 2022.11.16
+
 ## ENV
 
 ### 동작 개요
@@ -83,17 +89,19 @@ QuoridorEnv 의 초기화에 사용된다.<br>
 
 ### 함수 목록
 
-* register_agent()
-* reset(width=-1, value_mode=-1)
-* get_legal_action(state)
-* render(agent_num)
-* step(agent_num, action)
-* get_state(agent_num)
-* get_flipped_state(state)
-* ask_how_far(state)
-* ask_how_far_opp(state)
-* get_value(agent_num)
-* ask_end_state(state)
+```
+register_agent()
+reset(width=-1, value_mode=-1)
+get_legal_action(state)
+render(agent_num)
+step(agent_num, action)
+get_state(agent_num)
+get_flipped_state(state)
+ask_how_far(state)
+ask_how_far_opp(state)
+get_value(agent_num)
+ask_end_state(state)
+```
 
 #### register_agent()
 
