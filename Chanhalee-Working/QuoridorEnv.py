@@ -232,8 +232,6 @@ class QuoridorEnv():
         elif (action < self.all_action.size):
             if agent_num == AGENT_1:
                 state[1][0][2] -= 1
-            else:
-                state[1][1][2] -= 1
             action -= ACT_MOVE_CNT
             state[0][action // ((width - 1) * (width - 1))][(action % ((width - 1)
                                                                        * (width - 1))) % (width - 1)][(action % ((width - 1) * (width - 1))) // (width - 1)] = True
