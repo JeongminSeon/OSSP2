@@ -125,13 +125,14 @@ class QuoridorGUI():
                     self.oldMousex, self.oldMousey = event.pos
                     self.mouseDown = True
                 elif event.type == MOUSEBUTTONUP:
-                    if not self.mouseDown:
-                        self.oldMousex = self.mousex
-                        self.oldMousey = self.mousey
+                    # if not self.mouseDown:
+                    #     self.oldMousex = self.mousex
+                    #     self.oldMousey = self.mousey
                     self.mousex, self.mousey = event.pos
                     self.mouseUp = True
                     self.mouseDown = False
             if self.env.ask_state_changed():
+                self.env.set_state_changed_false()
                 self.updateLegalActionAndState()
             boxx, boxy, third_element = self.getObjAtPixel(
                 self.oldMousex, self.oldMousey, self.mousex, self.mousey)
@@ -147,6 +148,7 @@ class QuoridorGUI():
                     # 착수
                     if self.mouseUp:
                         self.confirmMove(boxx, boxy, third_element)
+                        self.env.set_state_changed_false()
                         self.updateLegalActionAndState()
             pygame.display.update()
             self.FPSCLOCK.tick(FPS)
@@ -375,6 +377,7 @@ class QuoridorGUI():
                 env.get_state(self.player2_num))
         else:
             self.legal_action = None
+        print("legal action:", self.legal_action)
         self.wall_map = self.env.map
         self.player_map = self.getPlayerMap(self.env)
 
@@ -388,7 +391,7 @@ class QuoridorGUI():
                 y = width - 2 - boxy
             else:
                 y = width - 1 - boxy
-        if self.player2_on and self.env.last_played == self.player1_num:  # player1의 입장에서 Legal 여부 판단
+        if self.player2_on and self.env.last_played == self.player1_num:  # player2의 입장에서 Legal 여부 판단
             playerNo = 2
             x = boxx
             if third_element == 2 or third_element == 1:  # 벽설치의 경우 변환이 조금 다름.
@@ -473,7 +476,7 @@ class QuoridorGUI():
             elif third_element == 1:
                 if (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
                     self.input_action = [
-                        self.player2_num, x + (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
+                        self.player2_num, (width - 2 - x) + (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
                     return True
             elif third_element == 2:
                 if (width - 2 - x) + (width - 1) * (width - 1) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:

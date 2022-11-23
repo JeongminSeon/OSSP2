@@ -71,22 +71,22 @@ class QuoridorEnv():
         # N
         if (my_pos[1] >= width - 1):
             ret[ACT_MOVE_NORTH] = False
-        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1]]) or (my_pos[0] < width - 2 and state[0][0][my_pos[0]][my_pos[1]])):
+        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1]]) or (my_pos[0] < width - 1 and state[0][0][my_pos[0]][my_pos[1]])):
             ret[ACT_MOVE_NORTH] = False
         # W
         if (my_pos[0] == 0):
             ret[ACT_MOVE_WEST] = False
-        elif((my_pos[1] != 0 and state[0][1][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 2 and state[0][1][my_pos[0] - 1][my_pos[1]])):
+        elif((my_pos[1] != 0 and state[0][1][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 1 and state[0][1][my_pos[0] - 1][my_pos[1]])):
             ret[ACT_MOVE_WEST] = False
         # S
         if (my_pos[1] == 0):
             ret[ACT_MOVE_SOUTH] = False
-        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 2 and state[0][0][my_pos[0]][my_pos[1] - 1])):
+        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 1 and state[0][0][my_pos[0]][my_pos[1] - 1])):
             ret[ACT_MOVE_SOUTH] = False
         # E
         if (my_pos[0] >= width - 1):
             ret[ACT_MOVE_EAST] = False
-        elif((my_pos[1] != 0 and state[0][1][my_pos[0]][my_pos[1] - 1]) or (my_pos[0] < width - 2 and state[0][1][my_pos[0]][my_pos[1]])):
+        elif((my_pos[1] != 0 and state[0][1][my_pos[0]][my_pos[1] - 1]) or (my_pos[0] < width - 1 and state[0][1][my_pos[0]][my_pos[1]])):
             ret[ACT_MOVE_EAST] = False
 
         # 벽설치 가능 여부
@@ -388,7 +388,10 @@ class QuoridorEnv():
         isItEnd = self.ask_end_state((self.map, self.player_status))
         if (self.value_mode == 0):
             if(isItEnd == 0):
-                return -1
+                if (self.ask_opponent_will_win(agent_num)):
+                    return -150
+                else:
+                    return -1
             elif (isItEnd == agent_num):
                 return 150
             else:
@@ -402,13 +405,15 @@ class QuoridorEnv():
         # ex) 5 x 5 게임판에서 (1, 2): -2, (3, 4): 200, (4, 3): -1
         if(self.value_mode == 1):
             if(isItEnd == 0):
-                if(agent_num == AGENT_1):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -100
+                elif(agent_num == AGENT_1):  # 일반적인 state
                     return 1 + self.player_status[0][1] - self.width
                 else:
                     return -self.player_status[1][1]
-            elif (isItEnd == agent_num):
+            elif (isItEnd == agent_num):  # 나의 승리
                 return 100
-            else:
+            else:  # 상대방의 승리
                 return -100
 
         # 3.조금 더 복잡한 value_function
@@ -420,6 +425,8 @@ class QuoridorEnv():
         # 산식 reward = (상대의 end_line 과의 거리 (벽무시)) - (나의 end_line 과의 거리 (벽무시)) * 2 - 1
         if(self.value_mode == 2):
             if(isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -1000
                 if(agent_num == AGENT_1):
                     return self.player_status[1][1] - (self.width - 1 - self.player_status[0][1]) * 2 - 1
                 else:
@@ -437,6 +444,8 @@ class QuoridorEnv():
         # 그 외  {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * -1
         if(self.value_mode == 3):
             if(isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -1000
                 if(agent_num == AGENT_1):
                     return -self.ask_how_far((self.map, self.player_status))
                 else:
@@ -454,6 +463,8 @@ class QuoridorEnv():
         # 그 외 {상대의 도착까지 남은 수} - {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * 2 -1
         if(self.value_mode == 4):
             if(isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -1000
                 if(agent_num == AGENT_1):
                     return self.ask_how_far_opp((self.map, self.player_status)) - self.ask_how_far((self.map, self.player_status)) * 2 - 1
                 else:
@@ -474,6 +485,28 @@ class QuoridorEnv():
             return AGENT_2
         else:
             return 0
+
+    def ask_opponent_will_win(self, agent_num):
+        width = self.width
+        if (agent_num == AGENT_1):  # p2의 승리임박을 확인
+            if(self.player_status[1][1] == 1):
+                if ((self.player_status[1][0] != 0 and self.map[0][self.player_status[1][0] - 1][0]) or (self.player_status[1][0] < width - 1 and self.map[0][self.player_status[1][0]][0])):
+                    return False
+                else:
+                    return True
+            else:
+                return False
+        elif (agent_num == AGENT_2):  # p1의 승리임박을 확인
+            if(self.player_status[0][1] == width-2):
+                if((self.player_status[0][0] != 0 and self.map[0][self.player_status[0][0] - 1][width-2]) or (self.player_status[0][0] < width - 1 and self.map[0][self.player_status[0][0]][width-2])):
+                    return False
+                else:
+                    return True
+            else:
+                return False
+        else:
+            raise Exception(
+                'QuoridorEnv.ask_opponent_will_win()- agent_num 에러!\n잘못된 agent_num을 입력하였음!')
 
     def ask_state_changed(self):
         return self.state_changed
