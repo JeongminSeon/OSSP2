@@ -591,24 +591,24 @@ if __name__ == '__main__':
 
     # rollout 수정 필요
 
-    count = 0
-    while q.ask_end_state((q.map,q.player_status)) == False :
-        # find the best move
-        best_move = mcts.search(q)
+    # count = 0
+    # while q.ask_end_state((q.map,q.player_status)) == False :
+    #     # find the best move
+    #     best_move = mcts.search(q)
 
-        # make the best action on env
-        print(best_move.get_action())
-        if count % 2 == 0:
-            q.step(agent_1,best_move.get_action())
-        else:
-            q.step(agent_2,best_move.get_action())
+    #     # make the best action on env
+    #     print(best_move.get_action())
+    #     if count % 2 == 0:
+    #         q.step(agent_1,best_move.get_action())
+    #     else:
+    #         q.step(agent_2,best_move.get_action())
 
-        q.render(agent_1)
-        if q.ask_end_state((q.map,q.player_status)) :
-            print('게임 끝')
-        else:
-            print('게임 진행 중')
-        count += 1
+    #     q.render(agent_1)
+    #     if q.ask_end_state((q.map,q.player_status)) :
+    #         print('게임 끝')
+    #     else:
+    #         print('게임 진행 중')
+    #     count += 1
 
 
 
@@ -618,3 +618,72 @@ if __name__ == '__main__':
     #   backpropagation & FINAL RESULT demo
     #
     #################################
+
+
+    print('#########################################')
+
+    actions = q.get_legal_action(q.get_state(agent_1))
+
+    root_node = TreeNode(q,None)
+    node_copy = deepcopy(root_node)
+
+    # select 구현
+    while not root_node.is_terminal:
+        
+        if root_node.is_fully_expanded:
+            
+            # cuurent_player 설정
+            if root_node.env.last_played == AGENT_1 :
+                current_player = AGENT_2
+            else :
+                current_player = AGENT_1
+            
+                best_node = mcts.get_best_move(node_copy, 2)
+                print('best action : ', best_node.get_action())
+                best_node.env.render(agent_1)
+                node_copy.env.step(current_player, best_node.get_action())
+        
+        else: # expand
+            # cuurent_player 설정
+            if root_node.env.last_played == AGENT_1 :
+                current_player = AGENT_2
+            else :
+                current_player = AGENT_1
+            
+            actions = node_copy.env.get_legal_action(node_copy.env.get_state(current_player))
+           
+            for action in actions :
+                new_node = deepcopy(node_copy)
+
+                if action not in root_node.children:
+                    new_node.env.step(current_player,action)
+
+                    
+                    root_node.children[action] = new_node
+
+                    if len(actions) == len(root_node.children):
+                        root_node.is_fully_expanded = True
+                        print('모든 action에 대해 expansion 완료')
+                        break
+            
+        break
+
+    for child_node in root_node.children.values():
+        child_node.env.render(agent_1)
+        
+        input()
+
+    
+    
+    
+            
+                    
+
+            
+            
+        
+            
+    
+    
+
+
