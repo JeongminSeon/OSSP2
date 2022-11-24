@@ -476,7 +476,7 @@ class QuoridorGUI():
             elif third_element == 1:
                 if (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
                     self.input_action = [
-                        self.player2_num, (width - 2 - x) + (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
+                        self.player2_num, (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
                     return True
             elif third_element == 2:
                 if (width - 2 - x) + (width - 1) * (width - 1) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
