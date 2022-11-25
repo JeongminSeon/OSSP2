@@ -496,11 +496,20 @@ class QuoridorGUI():
         self.game_done = done
 
 
-q = QuoridorEnv(width=5, value_mode=1)
+q = QuoridorEnv(width=9, value_mode=1)
 agent_1 = q.register_agent()
 agent_2 = q.register_agent()
 print(q.get_legal_action(q.get_state(agent_1)))
+q.render(agent_1)
 q.step(agent_1, 0)
+q.step(agent_1, 0)
+q.step(agent_2, 0)
+q.step(agent_1, 0)
+q.step(agent_2, 0)
+q.step(agent_1, 0)
+q.step(agent_2, 0)
+q.render(agent_1)
+q.step(agent_2, 0)
 q.render(agent_1)
 print(q.ask_how_far_opp(q.get_state(agent_1)))
 print(q.ask_how_far(q.get_state(agent_1)))
