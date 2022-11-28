@@ -76,7 +76,7 @@ class QuoridorEnv():
         # W
         if (my_pos[0] == 0):
             ret[ACT_MOVE_WEST] = False
-        elif((my_pos[1] != 0 and state[0][1][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 1 and state[0][1][my_pos[0] - 1][my_pos[1]])):
+        elif((my_pos[1] != 0 and state[0][1][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[1] < width - 1 and state[0][1][my_pos[0] - 1][my_pos[1]])):
             ret[ACT_MOVE_WEST] = False
         # S
         if (my_pos[1] == 0):
@@ -86,7 +86,7 @@ class QuoridorEnv():
         # E
         if (my_pos[0] >= width - 1):
             ret[ACT_MOVE_EAST] = False
-        elif((my_pos[1] != 0 and state[0][1][my_pos[0]][my_pos[1] - 1]) or (my_pos[0] < width - 1 and state[0][1][my_pos[0]][my_pos[1]])):
+        elif((my_pos[1] != 0 and state[0][1][my_pos[0]][my_pos[1] - 1]) or (my_pos[1] < width - 1 and state[0][1][my_pos[0]][my_pos[1]])):
             ret[ACT_MOVE_EAST] = False
 
         # 벽설치 가능 여부
