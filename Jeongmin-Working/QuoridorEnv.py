@@ -170,10 +170,20 @@ class QuoridorEnv():
                 # 플레이어 배치하는 파트
                 # p1 의 위치는 빨간색으로 표기
                 if(state[1][0][0] == j and state[1][0][1] == i):
-                    if (agent_num == AGENT_1):
-                        output.append('\033[42m' + ' 1 ' + '\033[0m')
+                    if(state[1][1][0] == j and state[1][1][1] == i):
+                        if (agent_num == AGENT_1):
+                            output.append('\033[44m' + '1' + '\033[0m')
+                            output.append(' ')
+                            output.append('\033[42m' + '2' + '\033[0m')
+                        else:
+                            output.append('\033[42m' + '2' + '\033[0m')
+                            output.append(' ')
+                            output.append('\033[44m' + '1' + '\033[0m')
                     else:
-                        output.append('\033[44m' + ' 1 ' + '\033[0m')
+                        if (agent_num == AGENT_1):
+                            output.append('\033[42m' + ' 1 ' + '\033[0m')
+                        else:
+                            output.append('\033[44m' + ' 1 ' + '\033[0m')
                 # p2 의 위치는 파란색으로 표기
                 elif(state[1][1][0] == j and state[1][1][1] == i):
                     if (agent_num == AGENT_1):
@@ -518,8 +528,13 @@ class QuoridorEnv():
 # q = QuoridorEnv(width=5, value_mode=1)
 # agent_1 = q.register_agent()
 # agent_2 = q.register_agent()
-# print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
+# 뽀print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
+# q.step(agent_1,22)
+# q.step(agent_1,23)
+# q.step(agent_1,24)
+# q.step(agent_1,30)
 # print(q.get_legal_action(q.get_state(agent_1)))
+# q.render(agent_1)
 # q.step(agent_2, 0)
 # q.step(agent_1, 11)
 # q.step(agent_1, 16)
