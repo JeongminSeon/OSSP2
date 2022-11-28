@@ -5,7 +5,7 @@ import random
 from copy import deepcopy
 from QuoridorEnv import *
 
-MCTS_ITERATIONS = 500
+MCTS_ITERATIONS = 100
 EXPLORATION_CONSTANT = 2
 AGENT_1 = 100
 AGENT_2 = 200
@@ -14,17 +14,17 @@ AGENT_2 = 200
 class TreeNode():
     # class constructor (create tree node class instance)
 
-    def __init__(self, env, parent, action = -1):
+    def __init__(self, env, parent):
         # init Env state
         self.env = env
 
         # AttributeError: 'TreeNode' object has no attribute 'step_done'
         step_done = env.ask_end_state((env.map, env.player_status))
+
         # init is node terminal (flag)
         if step_done == AGENT_1 or step_done == AGENT_2:
             # we have a terminal node
             self.is_terminal = True
-        
         else:
             self.is_terminal = False
         
@@ -42,15 +42,12 @@ class TreeNode():
         # init current node's children
         self.children = {}
 
-        # parent_action
-        self.action = action
     
-    def get_action(self):
 
-        return self.action
 
 # MCTS class definition
 class MCTS() :
+       
 
     # search for the best move in the current position
     def search(self, initial_state):
@@ -62,21 +59,28 @@ class MCTS() :
             
             node = self.select(self.root)
             print('step : ', count, '\'s Select is done')
-            print('step ', count ,'\'s parent is ', node.parent)
 
             # score current node (simiulation)
             score = self.rollout(node)
             print('step : ' ,count, '\'s Rollout is done')
-            print('Score is ', score)
+
             # backpropagate results
             self.backpropagate(node, score)
             print('step : ' ,count, '\'s Backpropagate is done')
-            print('node visit count : ', node.visits)
+
             
             count += 1
         # pick up the best move in the current position
         try:
             print(self.root.visits)
+            print(self.root.score)
+
+            for child_node in self.root.children.values():
+                print('----------------------------------------')
+                child_node.env.render(AGENT_1)
+                print('visits : ', child_node.visits)
+                print('score : ', child_node.score)
+
             return self.get_best_move(self.root, EXPLORATION_CONSTANT)
         
         except:
@@ -89,14 +93,10 @@ class MCTS() :
             # fully exapnded
             # best_move 함수를 통해 가장 유망한 자식 노드를 받을 수 있음
             if node.is_fully_expanded:
-                if node.env.last_played == AGENT_1 :
-                    current_player = AGENT_2
-                else:
-                    current_player = AGENT_1
 
                 best_node = self.get_best_move(node, EXPLORATION_CONSTANT)
-                node.env.step(current_player, best_node.get_action())
-
+                return best_node
+                
             # not fully expanded
             else:
                 # 완전 확장 될때에만 계산 가능 -> 노드 확장
@@ -115,23 +115,26 @@ class MCTS() :
             current_player = AGENT_1
             
         actions = node.env.get_legal_action(node.env.get_state(current_player))
+        print(actions)
+
 
         # loop over generated actions (states)
         for action in actions :
             
             # 현재 상태(actions)가 자식노드에 존재하면 안됨
-            if action not in node.children:
+            # action의 string 값을 dic의 key로 사용
+            if str(action) not in node.children:
                 # copying original node for original's env
                 node_env = deepcopy(node)
                 
                 # create a new node 
                 # 현재 player로 1 step 진행
-                new_node = TreeNode(node_env.env,node,action)
-                new_node.env.step(current_player,action)
+                node_env.env.step(current_player,action)
+                new_node = TreeNode(node_env.env,node)
 
                 # 자식 노드를 부모 노드 children dict(list) 에 추가
-                node.children[action] = new_node
-
+                node.children[str(action)] = new_node
+                
                 # no more legal action 
                 if len(actions) == len(node.children) :
                     node.is_fully_expanded = True
@@ -146,6 +149,7 @@ class MCTS() :
     # simulate the game via making random actions until reach end of the game
     def rollout(self, original_node) : 
         
+        original_node.env.render(AGENT_1)
         # create new node
         node = deepcopy(original_node)
         # terminal state에 도달할 때까지 랜덤 액션(move)
@@ -156,15 +160,16 @@ class MCTS() :
                 else:
                     current_player = AGENT_1
 
+                print('Before : ')
+                node.env.render(AGENT_1)
                 actions = node.env.get_legal_action(node.env.get_state(current_player))
                 action = random.choice(actions)
-              
+                print('After : ')
                 node.env.step(current_player,action)
+                node.env.render(AGENT_1)
         # no moves available
             except:
                 return 0 
-
-        node.env.render(AGENT_1)
 
         # terminal state에 도달 승리시 1, 패배시 -1
         if node.env.last_played == AGENT_1 : 

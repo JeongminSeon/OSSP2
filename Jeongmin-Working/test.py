@@ -10,9 +10,24 @@ if __name__ == '__main__':
     
     mcts = MCTS()
     
-    best_node = mcts.search(q)
+    q.step(agent_1, 20)
+    q.step(agent_1, 27)
+    q.step(agent_1, 28)
+    q.last_played = agent_2
 
-    q.step(agent_1,best_node.get_action())
+    test_node = TreeNode(q, None)
+    test_node.env.render(agent_1)
+
+    node = mcts.search(q)
+    
+    node.env.render(agent_1)
+    
+    # q.step(agent_1, 0)
+    # Test_node = TreeNode(q, root, 0)
+
+    # best_node = mcts.search(q)
+
+    
     # root = TreeNode(q, None)
     
     # expand Test O
