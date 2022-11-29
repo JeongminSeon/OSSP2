@@ -240,11 +240,12 @@ class QuoridorEnv():
                 state[1][0][0] += 1
         # 벽 배치하는 action
         elif (action < self.all_action.size):
-            if agent_num == AGENT_1:
-                state[1][0][2] -= 1
+            state[1][0][2] -= 1
             action -= ACT_MOVE_CNT
-            state[0][action // ((width - 1) * (width - 1))][(action % ((width - 1)
-                                                                       * (width - 1))) % (width - 1)][(action % ((width - 1) * (width - 1))) // (width - 1)] = True
+            col_row = action // ((width - 1) * (width - 1))
+            pos_x = (action % ((width - 1) * (width - 1))) % (width - 1)
+            pos_y = (action % ((width - 1) * (width - 1))) // (width - 1)
+            state[0][col_row][pos_x][pos_y] = True
 
         if (agent_num != AGENT_1):
             self.map, self.player_status = self.get_flipped_state(state)
