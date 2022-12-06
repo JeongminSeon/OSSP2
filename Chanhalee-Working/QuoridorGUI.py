@@ -51,9 +51,9 @@ class QuoridorGUI():
         self.width = env.width
         self.env = env
         self.game_done = False
-        self.XMARGIN = 80
+        self.XMARGIN = 60
         self.YMARGIN = 40
-        self.EXTRAWIDTH = 250
+        self.EXTRAWIDTH = 200
         self.TEXTMARGIN = 100
         self.WINDOWWIDTH = (self.BOXSIZE + self.GAPSIZE) * \
             self.width + self.XMARGIN * 2 - self.GAPSIZE + self.EXTRAWIDTH
@@ -120,10 +120,12 @@ class QuoridorGUI():
             self.drawBoard()
 
             # PRINT WHICH TURN
+            pygame.draw.rect(self.DISPLAYSURF, (230, 230, 230), [(self.BOXSIZE + self.GAPSIZE) *
+                             self.width + self.XMARGIN * 2 - self.GAPSIZE - 10, 0, self.EXTRAWIDTH+self.XMARGIN * 0.6 + 10, self.WINDOWHEIGHT])
             text0 = self.font.render(
-                "TURN: ", True, (200, 200, 200))
+                "TURN: ", True, (0, 0, 0))
             self.DISPLAYSURF.blit(text0, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE, 0))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE, 10))
             if (self.env.get_last_played() == AGENT_1):
                 text1 = self.font.render(
                     "BLUE", True, BLUE)
@@ -131,35 +133,35 @@ class QuoridorGUI():
                 text1 = self.font.render(
                     "RED", True, RED)
             self.DISPLAYSURF.blit(text1, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*3, 0))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*3.5, 10))
 
             # P1 의 status 문자 출력
             p1_text0 = self.font.render(
                 "RED: ", True, RED)
             self.DISPLAYSURF.blit(p1_text0, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*2))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*2))
             p1_text1 = self.font.render(
-                "Wall left: "+str(self.env.get_state(AGENT_1)[1][0][2]), True, DARKGRAY)
+                "Wall: "+str(self.env.get_state(AGENT_1)[1][0][2]), True, DARKGRAY)
             self.DISPLAYSURF.blit(p1_text1, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*2))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*2))
             p1_text2 = self.font.render(
-                "move count: "+str(self.env.get_move_count()[0]), True, DARKGRAY)
+                "move: "+str(self.env.get_move_count()[0]), True, DARKGRAY)
             self.DISPLAYSURF.blit(p1_text2, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*4))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*4))
 
             # P2 의 status 문자 출력
             p2_text0 = self.font.render(
                 "BLUE: ", True, BLUE)
             self.DISPLAYSURF.blit(p2_text0, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*8))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*8))
             p2_text1 = self.font.render(
-                "Wall left: "+str(self.env.get_state(AGENT_1)[1][1][2]), True, DARKGRAY)
+                "Wall: "+str(self.env.get_state(AGENT_1)[1][1][2]), True, DARKGRAY)
             self.DISPLAYSURF.blit(p2_text1, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*8))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*8))
             p2_text2 = self.font.render(
-                "move count: "+str(self.env.get_move_count()[1]), True, DARKGRAY)
+                "move: "+str(self.env.get_move_count()[1]), True, DARKGRAY)
             self.DISPLAYSURF.blit(p2_text2, ((
-                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*10))
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*10))
 
             for event in pygame.event.get():  # event handling loop
                 if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
