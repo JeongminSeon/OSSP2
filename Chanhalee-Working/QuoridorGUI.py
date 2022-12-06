@@ -5,6 +5,8 @@ from pygame.locals import *
 from QuoridorEnv import QuoridorEnv
 
 #  QuoridorEnv와 동기화가 필요한 항목들
+AGENT_1 = 100
+AGENT_2 = 200
 ACT_MOVE_CNT = 4
 ACT_MOVE_NORTH = 0
 ACT_MOVE_WEST = 1
@@ -17,6 +19,7 @@ REVEALSPEED = 8  # speed boxes' sliding reveals and covers
 
 #            R    G    B
 GRAY = (100, 100, 100)
+DARKGRAY = (30, 30, 30)
 NAVYBLUE = (60,  60, 100)
 WHITE = (255, 255, 255)
 RED = (255,   0,   0)
@@ -50,8 +53,10 @@ class QuoridorGUI():
         self.game_done = False
         self.XMARGIN = 80
         self.YMARGIN = 40
+        self.EXTRAWIDTH = 250
+        self.TEXTMARGIN = 100
         self.WINDOWWIDTH = (self.BOXSIZE + self.GAPSIZE) * \
-            self.width + self.XMARGIN * 2 - self.GAPSIZE
+            self.width + self.XMARGIN * 2 - self.GAPSIZE + self.EXTRAWIDTH
         self.WINDOWHEIGHT = (self.BOXSIZE + self.GAPSIZE) * \
             self.width + self.YMARGIN * 2 - self.GAPSIZE
         self.FPSCLOCK = pygame.time.Clock()
@@ -105,12 +110,56 @@ class QuoridorGUI():
         self.player_map = self.getPlayerMap(env)
         self.wall_map = env.map
         self.DISPLAYSURF.fill(BGCOLOR)
+        self.FONTSIZE = 20
+        self.font = pygame.font.SysFont("arial", self.FONTSIZE, True)
 
     def startGame(self):
         while not self.game_done:  # main game loop
             self.mouseUp = False
             self.DISPLAYSURF.fill(BGCOLOR)  # drawing the window
             self.drawBoard()
+
+            # PRINT WHICH TURN
+            text0 = self.font.render(
+                "TURN: ", True, (200, 200, 200))
+            self.DISPLAYSURF.blit(text0, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE, 0))
+            if (self.env.get_last_played() == AGENT_1):
+                text1 = self.font.render(
+                    "BLUE", True, BLUE)
+            else:
+                text1 = self.font.render(
+                    "RED", True, RED)
+            self.DISPLAYSURF.blit(text1, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*3, 0))
+
+            # P1 의 status 문자 출력
+            p1_text0 = self.font.render(
+                "RED: ", True, RED)
+            self.DISPLAYSURF.blit(p1_text0, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*2))
+            p1_text1 = self.font.render(
+                "Wall left: "+str(self.env.get_state(AGENT_1)[1][0][2]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p1_text1, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*2))
+            p1_text2 = self.font.render(
+                "move count: "+str(self.env.get_move_count()[0]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p1_text2, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*4))
+
+            # P2 의 status 문자 출력
+            p2_text0 = self.font.render(
+                "BLUE: ", True, BLUE)
+            self.DISPLAYSURF.blit(p2_text0, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*8))
+            p2_text1 = self.font.render(
+                "Wall left: "+str(self.env.get_state(AGENT_1)[1][1][2]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p2_text1, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*8))
+            p2_text2 = self.font.render(
+                "move count: "+str(self.env.get_move_count()[1]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p2_text2, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 1.4 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*10))
 
             for event in pygame.event.get():  # event handling loop
                 if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
