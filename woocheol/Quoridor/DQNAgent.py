@@ -1,5 +1,3 @@
-
-
 import os
 import collections
 import random
@@ -11,6 +9,9 @@ import torch.optim as optim
 import numpy as np
 
 from QuoridorEnv import QuoridorEnv
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print("Use Device: ", DEVICE)
 
 learning_rate = 0.0005
 gamma = 1
@@ -39,9 +40,9 @@ class ReplayBuffer():
             s_prime_lst.append(s_prime)
             done_mask_lst.append([done_mask])
 
-        return torch.tensor(s_lst, dtype=torch.float), torch.tensor(a_lst), \
-            torch.tensor(r_lst), torch.tensor(s_prime_lst, dtype=torch.float), \
-            torch.tensor(done_mask_lst)
+        return torch.tensor(s_lst, dtype=torch.float).to(DEVICE), torch.tensor(a_lst).to(DEVICE), \
+            torch.tensor(r_lst).to(DEVICE), torch.tensor(s_prime_lst, dtype=torch.float).to(DEVICE), \
+            torch.tensor(done_mask_lst).to(DEVICE)
 
     def size(self):
         return len(self.buffer)
@@ -121,8 +122,8 @@ def getLinearState(state):
 
 def main():
     env = QuoridorEnv(width=WIDTH, value_mode=0)
-    q = Qnet()
-    q_target = Qnet()
+    q = Qnet().to(DEVICE)
+    q_target = Qnet().to(DEVICE)
     q_target.load_state_dict(q.state_dict())
     memory = ReplayBuffer()
 
@@ -144,7 +145,7 @@ def main():
 
             available_actions = env.get_legal_action(original_state)
             action = q.sample_action(torch.tensor(
-                state).float(), epsilon, available_actions)
+                state).float().to(DEVICE), epsilon, available_actions)
 
             # print(available_actions)
             # print("state: ", state)
