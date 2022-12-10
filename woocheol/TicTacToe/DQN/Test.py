@@ -25,14 +25,6 @@ class Qnet(nn.Module):
         x = self.fc5(x)
         return x
 
-    def sample_action(self, obs, epsilon):
-        out = self.forward(obs)
-        coin = random.random()
-        if coin < epsilon:
-            return random.randint(0, 1)
-        else:
-            return out.argmax().item()
-
 
 env = TicTacToe()
 

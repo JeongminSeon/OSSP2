@@ -11,6 +11,7 @@ ACT_MOVE_EAST = 3
 
 
 class QuoridorEnv():
+
     def __init__(self, width=5, value_mode=0):
         if (width > 10 or width < 4 or width % 2 == 0):
             raise Exception(
@@ -57,7 +58,7 @@ class QuoridorEnv():
         if value_mode == -1:
             value_mode = self.value_mode
         self.__init__(width=width, value_mode=value_mode)
-        return (self.map, self.player_status)
+        return self.get_state(300 - self.last_played)
 
     def get_legal_action(self, state=""):
         if (state == ""):
@@ -401,7 +402,7 @@ class QuoridorEnv():
                 if (self.ask_opponent_will_win(agent_num)):
                     return -150
                 else:
-                    return 0
+                    return -1
             elif (isItEnd == agent_num):
                 return 150
             else:
