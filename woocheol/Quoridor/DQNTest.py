@@ -50,7 +50,7 @@ def main():
     env = QuoridorEnv(width=WIDTH, value_mode=0)
     q = Qnet()
     q.load_state_dict(torch.load(
-        'woocheol\Quoridor\save_models\Quoridor_DQN_w5_1000.pth'))
+        'woocheol\Quoridor\save_models\Quoridor_DQN_w5_200000.pth', map_location='cpu'))
 
     env.reset()
     done = False
