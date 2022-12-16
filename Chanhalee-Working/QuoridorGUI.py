@@ -1,8 +1,10 @@
 import random
 import pygame
+import time
 import sys
 from pygame.locals import *
 from QuoridorEnv import QuoridorEnv
+from DumbAgent import DumbAgent
 
 #  QuoridorEnv와 동기화가 필요한 항목들
 AGENT_1 = 100
@@ -17,7 +19,7 @@ FPS = 30  # frames per second, the general speed of the program
 
 REVEALSPEED = 8  # speed boxes' sliding reveals and covers
 
-#            R    G    B
+#         R    G    B
 GRAY = (100, 100, 100)
 DARKGRAY = (30, 30, 30)
 NAVYBLUE = (60,  60, 100)
@@ -43,7 +45,7 @@ OVAL = 'oval'
 
 
 class QuoridorGUI():
-    def __init__(self, env, agent_num1=-1, agent_num2=-1):
+    def __init__(self, env, agent_num1=-1, agent_num2=-1, auto_pilot1=None, auto_pilot2=None):
         self.input_action = [-1, -1]
         pygame.init()
         self.BOXSIZE = 40  # size of box height & width in pixels
@@ -66,6 +68,8 @@ class QuoridorGUI():
         self.player2_on = False
         self.player1_num = -1
         self.player2_num = -1
+        self.auto_pilot1 = None
+        self.auto_pilot2 = None
         if agent_num1 != -1:
             if env.agNumList[0] == agent_num1:
                 self.player1_on = True
@@ -94,10 +98,20 @@ class QuoridorGUI():
         elif self.player1_on:
             self.legal_action = env.get_legal_action(
                 env.get_state(self.player1_num))
+            if auto_pilot1 == None:
+                raise Exception('GUI 초기화 에러! 플레이어 1명이지만, 에이전트 전달하지 않음.')
+            self.auto_pilot2 = auto_pilot1
         elif self.player2_on:
             self.legal_action = env.get_legal_action(
                 env.get_state(self.player2_num))
+            if auto_pilot1 == None:
+                raise Exception('GUI 초기화 에러! 플레이어 1명이지만, 에이전트 전달하지 않음.')
+            self.auto_pilot1 = auto_pilot1
         else:
+            if auto_pilot1 == None or auto_pilot2 == None:
+                raise Exception('GUI 초기화 에러! 플레이어 0명이지만, 에이전트 2개 미만 전달.')
+            self.auto_pilot1 = auto_pilot1
+            self.auto_pilot2 = auto_pilot2
             self.legal_action = None
         self.mousex = 0  # used to store x coordinate of mouse event
         self.mousey = 0  # used to store y coordinate of mouse event
@@ -115,8 +129,8 @@ class QuoridorGUI():
 
     def startGame(self):
         while not self.game_done:  # main game loop
+            auto_pilot_played = False
             self.mouseUp = False
-            self.DISPLAYSURF.fill(BGCOLOR)  # drawing the window
             self.drawBoard()
 
             # PRINT WHICH TURN
@@ -162,26 +176,47 @@ class QuoridorGUI():
                 "move: "+str(self.env.get_move_count()[1]), True, DARKGRAY)
             self.DISPLAYSURF.blit(p2_text2, ((
                 self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*10))
-
-            for event in pygame.event.get():  # event handling loop
-                if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == MOUSEMOTION:
-                    if not self.mouseDown:
-                        self.oldMousex = self.mousex
-                        self.oldMousey = self.mousey
-                    self.mousex, self.mousey = event.pos
-                elif event.type == MOUSEBUTTONDOWN:
-                    self.oldMousex, self.oldMousey = event.pos
-                    self.mouseDown = True
-                elif event.type == MOUSEBUTTONUP:
-                    # if not self.mouseDown:
-                    #     self.oldMousex = self.mousex
-                    #     self.oldMousey = self.mousey
-                    self.mousex, self.mousey = event.pos
-                    self.mouseUp = True
-                    self.mouseDown = False
+            if not self.player1_on and not self.player2_on:
+                for event in pygame.event.get():  # event handling loop
+                    if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
+                        pygame.quit()
+                        sys.exit()
+                    elif event.type == MOUSEMOTION:
+                        if not self.mouseDown:
+                            self.oldMousex = self.mousex
+                            self.oldMousey = self.mousey
+                        self.mousex, self.mousey = event.pos
+                    elif event.type == MOUSEBUTTONDOWN:
+                        self.oldMousex, self.oldMousey = event.pos
+                        self.mouseDown = True
+                    elif event.type == MOUSEBUTTONUP:
+                        # if not self.mouseDown:
+                        #     self.oldMousex = self.mousex
+                        #     self.oldMousey = self.mousey
+                        self.mousex, self.mousey = event.pos
+                        self.mouseUp = True
+                        self.mouseDown = False
+            if (self.auto_pilot1 != None):
+                if (self.env.get_last_played() != self.auto_pilot1.get_agent_num()):
+                    move = self.auto_pilot1.get_action()
+                    time.sleep(0.3)
+                    if move != None:
+                        state, reward, done = self.env.step(
+                            self.auto_pilot1.get_agent_num(), move)
+                        self.game_done = done
+                        auto_pilot_played = True
+                    else:
+                        raise Exception('GUI: auto pilot1 구동 실패')
+            if (self.auto_pilot2 != None and not auto_pilot_played):
+                if (self.env.get_last_played() != self.auto_pilot2.get_agent_num()):
+                    move = self.auto_pilot2.get_action()
+                    time.sleep(0.3)
+                    if move != None:
+                        state, reward, done = self.env.step(
+                            self.auto_pilot2.get_agent_num(), move)
+                        self.game_done = done
+                    else:
+                        raise Exception('GUI: auto pilot2 구동 실패')
             if self.env.ask_state_changed():
                 self.env.set_state_changed_false()
                 self.updateLegalActionAndState()
@@ -347,6 +382,7 @@ class QuoridorGUI():
         return ret
 
     def drawBoard(self):
+        self.DISPLAYSURF.fill(BGCOLOR)  # drawing the window
         # player가 설 수 있는 위치들을 그림
         for boxx in range(self.width):
             for boxy in range(self.width):
@@ -435,14 +471,14 @@ class QuoridorGUI():
     def checkObjLegalAndGetMove(self, boxx, boxy, third_element):
         width = self.width
         playerNo = -1  # 플레이 가능한 플레이어의 number 에 대한 변수
-        if self.player1_on and self.env.last_played == self.player2_num:  # player1의 입장에서 Legal 여부 판단
+        if self.player1_on and self.env.last_played != self.player1_num:  # player1의 입장에서 Legal 여부 판단
             playerNo = 1
             x = boxx
             if third_element == 2 or third_element == 1:  # 벽설치의 경우 변환이 조금 다름.
                 y = width - 2 - boxy
             else:
                 y = width - 1 - boxy
-        if self.player2_on and self.env.last_played == self.player1_num:  # player2의 입장에서 Legal 여부 판단
+        if self.player2_on and self.env.last_played != self.player2_num:  # player2의 입장에서 Legal 여부 판단
             playerNo = 2
             x = boxx
             if third_element == 2 or third_element == 1:  # 벽설치의 경우 변환이 조금 다름.
@@ -536,7 +572,7 @@ class QuoridorGUI():
                     return True
         return False
 
-    def confirmMove(self, boxx, boxy, third_element):
+    def confirmMove(self):
         state, reward, done = self.env.step(
             self.input_action[0], self.input_action[1])
         if self.input_action[0] == self.player1_num:
@@ -550,10 +586,12 @@ class QuoridorGUI():
 q = QuoridorEnv(width=5, value_mode=1)
 agent_1 = q.register_agent()
 agent_2 = q.register_agent()
+dumb = DumbAgent(q, agent_2)
+dumb2 = DumbAgent(q, agent_1)
 print(q.get_legal_action(q.get_state(agent_1)))
 q.render(agent_1)
 print(q.ask_how_far_opp(q.get_state(agent_1)))
 print(q.ask_how_far(q.get_state(agent_1)))
 print(q.get_legal_action(q.get_state(agent_1)))
-g = QuoridorGUI(q, agent_1, agent_2)
+g = QuoridorGUI(q, auto_pilot1=dumb, auto_pilot2=dumb2)
 g.startGame()
