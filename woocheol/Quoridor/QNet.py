@@ -31,7 +31,11 @@ class Qnet(nn.Module):
 
     def get_action(self, state):
         linear_state = getLinearState(state)
-        return self.forward(linear_state)
+        out = self.forward(linear_state)
+        return out.argmax().item()
+
+    def get_agent_num(self):
+        return self.agent_num
 
     def sample_action(self, obs, epsilon, available_actions):
         out = self.forward(obs)
