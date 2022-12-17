@@ -5,6 +5,7 @@ from QuoridorEnv import QuoridorEnv
 
 AGENT_1 = 100
 AGENT_2 = 200
+
 WALL_ACT = 16
 
 
@@ -450,7 +451,7 @@ class QAgentQLearning():
 
         self.q_table_1 = np.zeros((width, width, self.wall_act_size, 4 + (width-1) * (width-1) * 2)) # agent1의 q벨류를 저장하는 변수. 모두 0으로 초기화. 
         self.q_table_2 = np.zeros((width, width, self.wall_act_size, 4 + (width-1) * (width-1) * 2)) # agent2의 q벨류를 저장하는 변수. 모두 0으로 초기화.
-        
+ 
     def select_action(self, state, agent_num):
         # eps-greedy로 액션을 선택
         coin = random.random()
@@ -466,6 +467,7 @@ class QAgentQLearning():
                 action = random.randint(0,3 + (self.width-1) * (self.width-1) * 2)
             else:
                 action_val = self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num_prime,:]
+
                 action = np.argmax(action_val)
             return action
 
@@ -538,6 +540,7 @@ def main():
             
             s_prime_1, r_1, done = env.step(agent_1, a_1) #action 진행 후 state, reward, done 반환
             agent.update_table(env.get_state(agent_1),a_1,r_1,s_prime_1, agent_1)
+
             walk+=1
             p1rsum+=r_1
 
@@ -563,6 +566,7 @@ def main():
         agent.anneal_eps()
     print("p1승리 : ", p1win, "| p2승리", p2win, "| p1 reward 합 : ",p1rsum)
     env.render(agent_1)
+
     agent.show_table() # 학습이 끝난 결과를 출력
 
 if __name__ == '__main__':
