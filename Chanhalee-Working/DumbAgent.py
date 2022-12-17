@@ -52,11 +52,11 @@ class DumbAgent():
                     action += ACT_MOVE_CNT
                 isItEnd = self.env.ask_end_state(state)
                 if (isItEnd == 0):
-                    if (self.env.ask_opponent_will_win(self.agent_num)):  # 상대방의 승리 직전
+                    if (state[1][1][1] == 1):  # 상대방의 승리 직전
                         reward = -1000
                     reward = self.env.ask_how_far_opp(
                         state) - self.env.ask_how_far(state) * 2 - 1
-                elif (isItEnd == self.agent_num):
+                elif (state[1][0][1] == width - 1):
                     reward = 1000
                 else:
                     reward = -1000
@@ -64,6 +64,7 @@ class DumbAgent():
                 if action < ACT_MOVE_CNT:
                     if max_val_m <= reward:
                         if reward == 1000:
+                            print(action)
                             return action
                         elif max_val_m < reward:
                             max_action_m = []
