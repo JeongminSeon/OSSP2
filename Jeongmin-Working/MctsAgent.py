@@ -9,9 +9,11 @@ class Agent():
     def get_action(self) :
         if self.agent_num != self.env.get_last_played():
             
-            self.env.render(100)
+            
             mcts = MCTS()
             best_action = mcts.search(self.env)
 
             return best_action.get_action()
 
+    def get_agent_num(self):
+        return self.agent_num

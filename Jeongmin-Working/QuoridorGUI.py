@@ -1,10 +1,15 @@
 import random
 import pygame
+import time
 import sys
 from pygame.locals import *
 from QuoridorEnv import QuoridorEnv
+from DumbAgent import DumbAgent
+from MctsAgent import *
 
 #  QuoridorEnv와 동기화가 필요한 항목들
+AGENT_1 = 100
+AGENT_2 = 200
 ACT_MOVE_CNT = 4
 ACT_MOVE_NORTH = 0
 ACT_MOVE_WEST = 1
@@ -15,8 +20,9 @@ FPS = 30  # frames per second, the general speed of the program
 
 REVEALSPEED = 8  # speed boxes' sliding reveals and covers
 
-#            R    G    B
+#         R    G    B
 GRAY = (100, 100, 100)
+DARKGRAY = (30, 30, 30)
 NAVYBLUE = (60,  60, 100)
 WHITE = (255, 255, 255)
 RED = (255,   0,   0)
@@ -40,7 +46,7 @@ OVAL = 'oval'
 
 
 class QuoridorGUI():
-    def __init__(self, env, agent_num1=-1, agent_num2=-1):
+    def __init__(self, env, agent_num1=-1, agent_num2=-1, auto_pilot1=None, auto_pilot2=None):
         self.input_action = [-1, -1]
         pygame.init()
         self.BOXSIZE = 40  # size of box height & width in pixels
@@ -48,10 +54,12 @@ class QuoridorGUI():
         self.width = env.width
         self.env = env
         self.game_done = False
-        self.XMARGIN = 80
+        self.XMARGIN = 60
         self.YMARGIN = 40
+        self.EXTRAWIDTH = 200
+        self.TEXTMARGIN = 100
         self.WINDOWWIDTH = (self.BOXSIZE + self.GAPSIZE) * \
-            self.width + self.XMARGIN * 2 - self.GAPSIZE
+            self.width + self.XMARGIN * 2 - self.GAPSIZE + self.EXTRAWIDTH
         self.WINDOWHEIGHT = (self.BOXSIZE + self.GAPSIZE) * \
             self.width + self.YMARGIN * 2 - self.GAPSIZE
         self.FPSCLOCK = pygame.time.Clock()
@@ -61,6 +69,8 @@ class QuoridorGUI():
         self.player2_on = False
         self.player1_num = -1
         self.player2_num = -1
+        self.auto_pilot1 = None
+        self.auto_pilot2 = None
         if agent_num1 != -1:
             if env.agNumList[0] == agent_num1:
                 self.player1_on = True
@@ -89,10 +99,20 @@ class QuoridorGUI():
         elif self.player1_on:
             self.legal_action = env.get_legal_action(
                 env.get_state(self.player1_num))
+            if auto_pilot1 == None:
+                raise Exception('GUI 초기화 에러! 플레이어 1명이지만, 에이전트 전달하지 않음.')
+            self.auto_pilot2 = auto_pilot1
         elif self.player2_on:
             self.legal_action = env.get_legal_action(
                 env.get_state(self.player2_num))
+            if auto_pilot1 == None:
+                raise Exception('GUI 초기화 에러! 플레이어 1명이지만, 에이전트 전달하지 않음.')
+            self.auto_pilot1 = auto_pilot1
         else:
+            if auto_pilot1 == None or auto_pilot2 == None:
+                raise Exception('GUI 초기화 에러! 플레이어 0명이지만, 에이전트 2개 미만 전달.')
+            self.auto_pilot1 = auto_pilot1
+            self.auto_pilot2 = auto_pilot2
             self.legal_action = None
         self.mousex = 0  # used to store x coordinate of mouse event
         self.mousey = 0  # used to store y coordinate of mouse event
@@ -105,13 +125,59 @@ class QuoridorGUI():
         self.player_map = self.getPlayerMap(env)
         self.wall_map = env.map
         self.DISPLAYSURF.fill(BGCOLOR)
+        self.FONTSIZE = 20
+        self.font = pygame.font.SysFont("arial", self.FONTSIZE, True)
 
     def startGame(self):
         while not self.game_done:  # main game loop
+            auto_pilot_played = False
             self.mouseUp = False
-            self.DISPLAYSURF.fill(BGCOLOR)  # drawing the window
             self.drawBoard()
 
+            # PRINT WHICH TURN
+            pygame.draw.rect(self.DISPLAYSURF, (230, 230, 230), [(self.BOXSIZE + self.GAPSIZE) *
+                             self.width + self.XMARGIN * 2 - self.GAPSIZE - 10, 0, self.EXTRAWIDTH+self.XMARGIN * 0.6 + 10, self.WINDOWHEIGHT])
+            text0 = self.font.render(
+                "TURN: ", True, (0, 0, 0))
+            self.DISPLAYSURF.blit(text0, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE, 10))
+            if (self.env.get_last_played() == AGENT_1):
+                text1 = self.font.render(
+                    "BLUE", True, BLUE)
+            else:
+                text1 = self.font.render(
+                    "RED", True, RED)
+            self.DISPLAYSURF.blit(text1, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*3.5, 10))
+
+            # P1 의 status 문자 출력
+            p1_text0 = self.font.render(
+                "RED: ", True, RED)
+            self.DISPLAYSURF.blit(p1_text0, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*2))
+            p1_text1 = self.font.render(
+                "Wall: "+str(self.env.get_state(AGENT_1)[1][0][2]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p1_text1, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*2))
+            p1_text2 = self.font.render(
+                "move: "+str(self.env.get_move_count()[0]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p1_text2, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*4))
+
+            # P2 의 status 문자 출력
+            p2_text0 = self.font.render(
+                "BLUE: ", True, BLUE)
+            self.DISPLAYSURF.blit(p2_text0, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE, self.YMARGIN+self.FONTSIZE*8))
+            p2_text1 = self.font.render(
+                "Wall: "+str(self.env.get_state(AGENT_1)[1][1][2]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p2_text1, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*8))
+            p2_text2 = self.font.render(
+                "move: "+str(self.env.get_move_count()[1]), True, DARKGRAY)
+            self.DISPLAYSURF.blit(p2_text2, ((
+                self.BOXSIZE + self.GAPSIZE) * self.width + self.XMARGIN * 2 - self.GAPSIZE+self.FONTSIZE*5, self.YMARGIN+self.FONTSIZE*10))
+            # if self.player1_on or self.player2_on:
             for event in pygame.event.get():  # event handling loop
                 if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
                     pygame.quit()
@@ -125,13 +191,35 @@ class QuoridorGUI():
                     self.oldMousex, self.oldMousey = event.pos
                     self.mouseDown = True
                 elif event.type == MOUSEBUTTONUP:
-                    if not self.mouseDown:
-                        self.oldMousex = self.mousex
-                        self.oldMousey = self.mousey
+                    # if not self.mouseDown:
+                    #     self.oldMousex = self.mousex
+                    #     self.oldMousey = self.mousey
                     self.mousex, self.mousey = event.pos
                     self.mouseUp = True
                     self.mouseDown = False
+            if (self.auto_pilot1 != None):
+                if (self.env.get_last_played() != self.auto_pilot1.get_agent_num()):
+                    move = self.auto_pilot1.get_action()
+                    pygame.time.wait(300)
+                    if move != None:
+                        state, reward, done = self.env.step(
+                            self.auto_pilot1.get_agent_num(), move)
+                        self.game_done = done
+                        auto_pilot_played = True
+                    else:
+                        raise Exception('GUI: auto pilot1 구동 실패')
+            if (self.auto_pilot2 != None and not auto_pilot_played):
+                if (self.env.get_last_played() != self.auto_pilot2.get_agent_num()):
+                    move = self.auto_pilot2.get_action()
+                    pygame.time.wait(300)
+                    if move != None:
+                        state, reward, done = self.env.step(
+                            self.auto_pilot2.get_agent_num(), move)
+                        self.game_done = done
+                    else:
+                        raise Exception('GUI: auto pilot2 구동 실패')
             if self.env.ask_state_changed():
+                self.env.set_state_changed_false()
                 self.updateLegalActionAndState()
             boxx, boxy, third_element = self.getObjAtPixel(
                 self.oldMousex, self.oldMousey, self.mousex, self.mousey)
@@ -146,7 +234,8 @@ class QuoridorGUI():
                         self.drawHighlightBox(boxx, boxy)
                     # 착수
                     if self.mouseUp:
-                        self.confirmMove(boxx, boxy, third_element)
+                        self.confirmMove()
+                        self.env.set_state_changed_false()
                         self.updateLegalActionAndState()
             pygame.display.update()
             self.FPSCLOCK.tick(FPS)
@@ -294,6 +383,7 @@ class QuoridorGUI():
         return ret
 
     def drawBoard(self):
+        self.DISPLAYSURF.fill(BGCOLOR)  # drawing the window
         # player가 설 수 있는 위치들을 그림
         for boxx in range(self.width):
             for boxy in range(self.width):
@@ -348,28 +438,13 @@ class QuoridorGUI():
             pygame.draw.rect(self.DISPLAYSURF, HIGHLIGHTCOLOR, (left + 5,
                                                                 top + 5, self.GAPSIZE - 10, self.BOXSIZE + self.GAPSIZE + self.BOXSIZE - 10), 0)
 
-    def startGameAnimation(self, board):
-        # Randomly reveal the boxes 8 at a time.
-        coveredBoxes = generateRevealedBoxesData(False)
-        boxes = []
-        for x in range(self.width):
-            for y in range(self.width):
-                boxes.append((x, y))
-        random.shuffle(boxes)
-        boxGroups = splitIntoGroupsOf(8, boxes)
-
-        drawBoard(board, coveredBoxes)
-        for boxGroup in boxGroups:
-            revealBoxesAnimation(board, boxGroup)
-            coverBoxesAnimation(board, boxGroup)
-
     def gameWonAnimation(self):
         # flash the background color when the player has won
         color1 = LIGHTBGCOLOR
         color2 = BGCOLOR
 
         for i in range(10):
-            color1, color2 = color2, color1  # swap colors
+            color1, color2 = color2, color1  # swap
             self.DISPLAYSURF.fill(color1)
             pygame.display.update()
             pygame.time.wait(300)
@@ -390,20 +465,21 @@ class QuoridorGUI():
                 env.get_state(self.player2_num))
         else:
             self.legal_action = None
+        print("legal action:", self.legal_action)
         self.wall_map = self.env.map
         self.player_map = self.getPlayerMap(self.env)
 
     def checkObjLegalAndGetMove(self, boxx, boxy, third_element):
         width = self.width
         playerNo = -1  # 플레이 가능한 플레이어의 number 에 대한 변수
-        if self.player1_on and self.env.last_played == self.player2_num:  # player1의 입장에서 Legal 여부 판단
+        if self.player1_on and self.env.last_played != self.player1_num:  # player1의 입장에서 Legal 여부 판단
             playerNo = 1
             x = boxx
             if third_element == 2 or third_element == 1:  # 벽설치의 경우 변환이 조금 다름.
                 y = width - 2 - boxy
             else:
                 y = width - 1 - boxy
-        if self.player2_on and self.env.last_played == self.player1_num:  # player1의 입장에서 Legal 여부 판단
+        if self.player2_on and self.env.last_played != self.player2_num:  # player2의 입장에서 Legal 여부 판단
             playerNo = 2
             x = boxx
             if third_element == 2 or third_element == 1:  # 벽설치의 경우 변환이 조금 다름.
@@ -488,7 +564,7 @@ class QuoridorGUI():
             elif third_element == 1:
                 if (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
                     self.input_action = [
-                        self.player2_num, x + (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
+                        self.player2_num, (width - 2 - x) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT]
                     return True
             elif third_element == 2:
                 if (width - 2 - x) + (width - 1) * (width - 1) + (width - 2 - y) * (width - 1) + ACT_MOVE_CNT in self.legal_action:
@@ -497,7 +573,7 @@ class QuoridorGUI():
                     return True
         return False
 
-    def confirmMove(self, boxx, boxy, third_element):
+    def confirmMove(self):
         state, reward, done = self.env.step(
             self.input_action[0], self.input_action[1])
         if self.input_action[0] == self.player1_num:
@@ -508,19 +584,17 @@ class QuoridorGUI():
         self.game_done = done
 
 
-q = QuoridorEnv(width=5, value_mode=1)
+q = QuoridorEnv(width=5, value_mode=9)
 agent_1 = q.register_agent()
 agent_2 = q.register_agent()
-print(q.step(agent_1, 0))  # agent_1 이 action 10을 수행
+dumb = DumbAgent(q, agent_2)
+mcts = Agent(q, agent_2)
+dumb2 = DumbAgent(q, agent_1)
 print(q.get_legal_action(q.get_state(agent_1)))
-q.step(agent_2, 0)
-q.step(agent_1, 19)
-q.step(agent_1, 5)
-q.step(agent_2, 0)
-q.step(agent_1, 0)
 q.render(agent_1)
-print(q.ask_how_far_opp(q.get_state(agent_1)))
-print(q.ask_how_far(q.get_state(agent_1)))
-print(q.get_legal_action(q.get_state(agent_1)))
-g = QuoridorGUI(q, agent_1, agent_2)
+# g = QuoridorGUI(q, agent_num1=agent_1, agent_num2=agent_2,
+#                 auto_pilot1=None, auto_pilot2=None)
+g = QuoridorGUI(q, agent_num1=agent_1,
+                auto_pilot1=mcts, auto_pilot2=None)
+# g = QuoridorGUI(q, auto_pilot1=dumb, auto_pilot2=dumb2)
 g.startGame()
