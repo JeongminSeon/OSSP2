@@ -5,7 +5,7 @@ import random
 from copy import deepcopy
 from QuoridorEnv import *
 
-MCTS_ITERATIONS = 100
+MCTS_ITERATIONS = 1000
 EXPLORATION_CONSTANT = 2
 AGENT_1 = 100
 AGENT_2 = 200
@@ -14,7 +14,7 @@ AGENT_2 = 200
 class TreeNode():
     # class constructor (create tree node class instance)
 
-    def __init__(self, env, parent):
+    def __init__(self, env, parent, action = -1):
         # init Env state
         self.env = env
 
@@ -42,6 +42,11 @@ class TreeNode():
         # init current node's children
         self.children = {}
 
+        self.action = action
+
+    def get_action(self):
+        return self.action
+
     
 
 
@@ -53,33 +58,33 @@ class MCTS() :
     def search(self, initial_state):
         
         self.root = TreeNode(initial_state, None)
-        count = 1
+        # count = 1
 
         for iterations in range(MCTS_ITERATIONS):
             
             node = self.select(self.root)
-            print('step : ', count, '\'s Select is done')
+            # print('step : ', count, '\'s Select is done')
 
             # score current node (simiulation)
             score = self.rollout(node)
-            print('step : ' ,count, '\'s Rollout is done')
+            # print('step : ' ,count, '\'s Rollout is done')
 
             # backpropagate results
             self.backpropagate(node, score)
-            print('step : ' ,count, '\'s Backpropagate is done')
+            # print('step : ' ,count, '\'s Backpropagate is done')
 
             
-            count += 1
+            # count += 1
         # pick up the best move in the current position
         try:
-            print(self.root.visits)
-            print(self.root.score)
+            # print(self.root.visits)
+            # print(self.root.score)
 
-            for child_node in self.root.children.values():
-                print('----------------------------------------')
-                child_node.env.render(AGENT_1)
-                print('visits : ', child_node.visits)
-                print('score : ', child_node.score)
+            # for child_node in self.root.children.values():
+            #     print('----------------------------------------')
+            #     child_node.env.render(AGENT_1)
+            #     print('visits : ', child_node.visits)
+            #     print('score : ', child_node.score)
 
             return self.get_best_move(self.root, EXPLORATION_CONSTANT)
         
@@ -115,7 +120,7 @@ class MCTS() :
             current_player = AGENT_1
             
         actions = node.env.get_legal_action(node.env.get_state(current_player))
-        print(actions)
+        # print(actions)
 
 
         # loop over generated actions (states)
@@ -130,7 +135,7 @@ class MCTS() :
                 # create a new node 
                 # 현재 player로 1 step 진행
                 node_env.env.step(current_player,action)
-                new_node = TreeNode(node_env.env,node)
+                new_node = TreeNode(node_env.env,node,action)
 
                 # 자식 노드를 부모 노드 children dict(list) 에 추가
                 node.children[str(action)] = new_node
@@ -149,7 +154,7 @@ class MCTS() :
     # simulate the game via making random actions until reach end of the game
     def rollout(self, original_node) : 
         
-        original_node.env.render(AGENT_1)
+        # original_node.env.render(AGENT_1)
         # create new node
         node = deepcopy(original_node)
         # terminal state에 도달할 때까지 랜덤 액션(move)
@@ -160,13 +165,13 @@ class MCTS() :
                 else:
                     current_player = AGENT_1
 
-                print('Before : ')
-                node.env.render(AGENT_1)
+                # print('Before : ')
+                # node.env.render(AGENT_1)
                 actions = node.env.get_legal_action(node.env.get_state(current_player))
                 action = random.choice(actions)
-                print('After : ')
+                # print('After : ')
                 node.env.step(current_player,action)
-                node.env.render(AGENT_1)
+                # node.env.render(AGENT_1)
         # no moves available
             except:
                 return 0 

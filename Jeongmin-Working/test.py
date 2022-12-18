@@ -1,5 +1,6 @@
 from QuoridorEnv import *
 from mcts_quoridor import *
+from MctsAgent import *
 
 if __name__ == '__main__':
     # create board instance
@@ -18,10 +19,19 @@ if __name__ == '__main__':
     test_node = TreeNode(q, None)
     test_node.env.render(agent_1)
 
-    node = mcts.search(q)
+    # node = mcts.search(q)
     
-    node.env.render(agent_1)
+    # node.env.render(agent_1)
+    q.last_played = agent_1
     
+    agent = Agent(q,agent_2)
+
+    action = agent.get_action()
+
+    print(action)
+    q.step(agent_2,action)
+    q.render(agent_1)
+
     # q.step(agent_1, 0)
     # Test_node = TreeNode(q, root, 0)
 
