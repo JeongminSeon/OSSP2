@@ -40,8 +40,6 @@ class QuoridorEnv():
         # legal 여부와 상관 없이 취할 수 있는 모든 action의 집합 (nwse이동) + (wall 배치 동작 개수)
         self.all_action = np.array(
             [True] * (4 + self.wall_map_width * self.wall_map_width * 2))
-        self.agent1_move_count = 0
-        self.agent2_move_count = 0
 
     def register_agent(self):
         if not self.agent1:
@@ -60,6 +58,7 @@ class QuoridorEnv():
         if value_mode == -1:
             value_mode = self.value_mode
         self.__init__(width=width, value_mode=value_mode)
+        return self.get_state(300 - self.last_played)
 
     def get_legal_action(self, state=""):
         if (state == ""):
@@ -228,10 +227,8 @@ class QuoridorEnv():
         width = self.width
         if (agent_num != AGENT_1):
             state = self.get_flipped_state()
-            self.agent2_move_count += 1
         else:
             state = (self.map, self.player_status)
-            self.agent1_move_count += 1
         # move action
         if (action < 4):
             if (action == ACT_MOVE_NORTH):
@@ -244,12 +241,11 @@ class QuoridorEnv():
                 state[1][0][0] += 1
         # 벽 배치하는 action
         elif (action < self.all_action.size):
-            state[1][0][2] -= 1
+            if agent_num == AGENT_1:
+                state[1][0][2] -= 1
             action -= ACT_MOVE_CNT
-            col_row = action // ((width - 1) * (width - 1))
-            pos_x = (action % ((width - 1) * (width - 1))) % (width - 1)
-            pos_y = (action % ((width - 1) * (width - 1))) // (width - 1)
-            state[0][col_row][pos_x][pos_y] = True
+            state[0][action // ((width - 1) * (width - 1))][(action % ((width - 1)
+                                                                       * (width - 1))) % (width - 1)][(action % ((width - 1) * (width - 1))) // (width - 1)] = True
 
         if (agent_num != AGENT_1):
             self.map, self.player_status = self.get_flipped_state(state)
@@ -528,12 +524,6 @@ class QuoridorEnv():
 
     def set_state_changed_false(self):
         self.state_changed = False
-
-    def get_move_count(self):
-        return self.agent1_move_count, self.agent2_move_count
-
-    def get_last_played(self):
-        return self.last_played
 
 
 # q = QuoridorEnv(width=5, value_mode=1)
