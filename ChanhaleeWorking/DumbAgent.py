@@ -1,5 +1,4 @@
 import numpy as np
-from Quoridor import QuoridorEnv
 import random
 
 ACT_MOVE_CNT = 4
@@ -80,7 +79,6 @@ class DumbAgent():
                         max_val_w = reward
 
             print(max_action_w, max_action_m)
-            print("randM: ", end="")
             if len(max_action_w) > 0:
                 if random.random() < self.wall_prob:
                     return random.choice(max_action_w)

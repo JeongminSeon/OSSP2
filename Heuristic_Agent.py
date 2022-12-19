@@ -3,8 +3,8 @@ import pygame
 import time
 import sys
 from pygame.locals import *
-from QuoridorEnv import QuoridorEnv
-from DumbAgent import DumbAgent
+from ChanhaleeWorking.QuoridorEnv import QuoridorEnv
+from ChanhaleeWorking.DumbAgent import DumbAgent
 
 #  QuoridorEnv와 동기화가 필요한 항목들
 AGENT_1 = 100
