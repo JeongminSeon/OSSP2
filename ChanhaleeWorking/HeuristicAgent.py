@@ -10,52 +10,52 @@ ACT_MOVE_EAST = 3
 # 휴리스틱으로만 움직이는 agent
 
 
-class DumbAgent():
+class HeuristicAgent():
     def __init__(self, env, agent_num):
         self.agent_num = agent_num
         self.env = env
         self.wall_prob = 0.5
 
-    def get_action(self):
+    def get_action(self, state):
         if self.agent_num != self.env.get_last_played():
             max_val_w = -99999
             max_val_m = -99999
             max_action_w = []
             max_action_m = []
             moves = self.env.get_legal_action(
-                self.env.get_state(self.agent_num))
+                state)
 
             for action in moves:
-                s_state = self.env.get_state(self.agent_num)
-                state = (s_state[0].copy(), s_state[1].copy())
+                s_state = state
+                state_temp = (s_state[0].copy(), s_state[1].copy())
                 width = self.env.width
                 reward = 0
                 if (action < 4):
                     if (action == ACT_MOVE_NORTH):
-                        state[1][0][1] += 1
+                        state_temp[1][0][1] += 1
                     if (action == ACT_MOVE_WEST):
-                        state[1][0][0] -= 1
+                        state_temp[1][0][0] -= 1
                     if (action == ACT_MOVE_SOUTH):
-                        state[1][0][1] -= 1
+                        state_temp[1][0][1] -= 1
                     if (action == ACT_MOVE_EAST):
-                        state[1][0][0] += 1
+                        state_temp[1][0][0] += 1
                 elif (action < self.env.all_action.size):
-                    state[1][0][2] -= 1
+                    state_temp[1][0][2] -= 1
                     action -= ACT_MOVE_CNT
                     col_row = action // ((width - 1) * (width - 1))
                     pos_x = (action %
                              ((width - 1) * (width - 1))) % (width - 1)
                     pos_y = (action %
                              ((width - 1) * (width - 1))) // (width - 1)
-                    state[0][col_row][pos_x][pos_y] = True
+                    state_temp[0][col_row][pos_x][pos_y] = True
                     action += ACT_MOVE_CNT
-                isItEnd = self.env.ask_end_state(state)
+                isItEnd = self.env.ask_end_state(state_temp)
                 if (isItEnd == 0):
-                    if (state[1][1][1] == 1):  # 상대방의 승리 직전
+                    if (state_temp[1][1][1] == 1):  # 상대방의 승리 직전
                         reward = -1000
                     reward = self.env.ask_how_far_opp(
-                        state) - self.env.ask_how_far(state) * 2 - 1
-                elif (state[1][0][1] == width - 1):
+                        state_temp) - self.env.ask_how_far(state_temp) * 2 - 1
+                elif (state_temp[1][0][1] == width - 1):
                     reward = 1000
                 else:
                     reward = -1000

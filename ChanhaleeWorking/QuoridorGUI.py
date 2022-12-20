@@ -196,7 +196,8 @@ class QuoridorGUI():
                     self.mouseDown = False
             if (self.auto_pilot1 != None):
                 if (self.env.get_last_played() != self.auto_pilot1.get_agent_num()):
-                    move = self.auto_pilot1.get_action()
+                    move = self.auto_pilot1.get_action(
+                        self.env.get_state(self.auto_pilot1.get_agent_num()))
                     pygame.time.wait(300)
                     if move != None:
                         state, reward, done = self.env.step(
@@ -207,7 +208,8 @@ class QuoridorGUI():
                         raise Exception('GUI: auto pilot1 구동 실패')
             if (self.auto_pilot2 != None and not auto_pilot_played):
                 if (self.env.get_last_played() != self.auto_pilot2.get_agent_num()):
-                    move = self.auto_pilot2.get_action()
+                    move = self.auto_pilot2.get_action(
+                        self.env.get_state(self.auto_pilot2.get_agent_num()))
                     pygame.time.wait(300)
                     if move != None:
                         state, reward, done = self.env.step(
@@ -584,8 +586,8 @@ class QuoridorGUI():
 # q = QuoridorEnv(width=9, value_mode=9)
 # agent_1 = q.register_agent()
 # agent_2 = q.register_agent()
-# dumb = DumbAgent(q, agent_2)
-# dumb2 = DumbAgent(q, agent_1)
+# dumb = HeuristicAgent(q, agent_2)
+# dumb2 = HeuristicAgent(q, agent_1)
 # print(q.get_legal_action(q.get_state(agent_1)))
 # q.render(agent_1)
 # # g = QuoridorGUI(q, agent_num1=agent_1, agent_num2=agent_2,

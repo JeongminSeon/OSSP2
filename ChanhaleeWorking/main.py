@@ -1,11 +1,11 @@
-from DumbAgent import DumbAgent
+from HeuristicAgent import HeuristicAgent
 from Quoridor import Quoridor
 
 
 def main():
     game = Quoridor(5, 10)
     game.reset()
-    agent = DumbAgent(game, 1)
+    agent = HeuristicAgent(game, 1)
 
 
 if __name__ == '__main__':
