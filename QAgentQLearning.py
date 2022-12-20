@@ -1,15 +1,20 @@
 import numpy as np
+import pandas as pd
 import random
 from collections import defaultdict
 from QuoridorEnv import QuoridorEnv
+from DumbAgent import DumbAgent
 
 AGENT_1 = 100
 AGENT_2 = 200
+
 WALL_ACT = 16
 
 
 class QAgentQLearning():
-    def __init__(self, width=5):
+    def __init__(self, env, agent_num, width=5):
+        self.agent_num = agent_num
+        self.env = env
         self.eps = 0.9 
         self.alpha = 0.1
         self.width = width
@@ -450,7 +455,7 @@ class QAgentQLearning():
 
         self.q_table_1 = np.zeros((width, width, self.wall_act_size, 4 + (width-1) * (width-1) * 2)) # agent1의 q벨류를 저장하는 변수. 모두 0으로 초기화. 
         self.q_table_2 = np.zeros((width, width, self.wall_act_size, 4 + (width-1) * (width-1) * 2)) # agent2의 q벨류를 저장하는 변수. 모두 0으로 초기화.
-        
+ 
     def select_action(self, state, agent_num):
         # eps-greedy로 액션을 선택
         coin = random.random()
@@ -466,6 +471,7 @@ class QAgentQLearning():
                 action = random.randint(0,3 + (self.width-1) * (self.width-1) * 2)
             else:
                 action_val = self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num_prime,:]
+
                 action = np.argmax(action_val)
             return action
 
@@ -481,7 +487,8 @@ class QAgentQLearning():
                     if self.wall_states == self.all_wall_states[i]:
                         self.wall_num_prime = i
             #QLearning 업데이트 식을 이용
-            self.q_table_2[state[1][1][0],state[1][1][1],self.wall_num,a] = self.q_table_2[state[1][1][0],state[1][1][1],self.wall_num,a] + self.alpha * (r + np.amax(self.q_table_2[s_prime[1][1][0],s_prime[1][1][1],self.wall_num_prime,:]) - self.q_table_2[state[1][1][0],state[1][1][1],self.wall_num,a])
+            self.q_table_2[state[1][1][0],state[1][1][1],self.wall_num,a] = (self.q_table_2[state[1][1][0],state[1][1][1],self.wall_num,a] + 
+                    self.alpha * (r + np.amax(self.q_table_2[s_prime[1][1][0],s_prime[1][1][1],self.wall_num_prime,:]) - self.q_table_2[state[1][1][0],state[1][1][1],self.wall_num,a]))
             
         else:
             for i in range(self.wall_act_size):
@@ -493,9 +500,10 @@ class QAgentQLearning():
                     if self.wall_states == self.all_wall_states[i]:
                         self.wall_num_prime = i
             #QLearning 업데이트 식을 이용
-            self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num,a] = self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num,a] + self.alpha * (r + np.amax(self.q_table_1[s_prime[1][0][0],s_prime[1][0][1],self.wall_num_prime,:]) - self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num,a])
+            self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num,a] = (self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num,a] + 
+                    self.alpha * (r + np.amax(self.q_table_1[s_prime[1][0][0],s_prime[1][0][1],self.wall_num_prime,:]) - self.q_table_1[state[1][0][0],state[1][0][1],self.wall_num,a]))
             
-        #print(self.q_table_1)
+        
 
     def anneal_eps(self):
         self.eps -= 0.0001
@@ -512,58 +520,82 @@ class QAgentQLearning():
                 action = np.argmax(col)
                 data[row_idx, col_idx] = action
         print(data)
+
+    def get_action(self):
+            q_table = np.load("C:/OSSP2/OSSP2/Seonuk-Working/100000_dumbagent_save.npy")
+
+            action_val = q_table[self.env.get_state(self.agent_num)[1][0][0],self.env.get_state(self.agent_num)[1][0][1],self.wall_num_prime,:]
+            action = np.argmax(action_val)
+
+            if action in self.env.get_legal_action(self.env.get_state(self.agent_num)):  
+                return action
+            
+            else:
+                while True:
+                    action = random.randint(0,3 + (self.width-1) * (self.width-1) * 2)
+                    if action in self.env.get_legal_action(self.env.get_state(self.agent_num)):                
+                        break
+                return action
+
+    def get_agent_num(self):
+        return self.agent_num
+
       
 def main():
     env = QuoridorEnv(width=5, value_mode=1)
-    agent = QAgentQLearning(width=5)
     sr=1
     p1win=0
     p2win=0
-    p1rsum=0
-    
 
-    for _ in range(1000): # 총 1,000 에피소드 동안 학습
+    for _ in range(100000): # 총 100000 에피소드 동안 학습
         done = 0
         env.reset()
         agent_1 = env.register_agent() #agent 등록
         agent_2 = env.register_agent()
+        agent1 = QAgentQLearning(env, agent_1, width=5)
+        dumbagent_2 = DumbAgent(env, agent_2)
         walk=0
 
         while done == 0: # 한 에피소드가 끝날 때 까지
             while True: 
-                a_1 = agent.select_action(env.get_state(agent_1), agent_1) #agent1 가능한 action 선택
+                a_1 = agent1.select_action(env.get_state(agent_1), agent_1) #agent1 가능한 action 선택
                 
                 if a_1 in env.get_legal_action(env.get_state(agent_1)):                
                     break
             
             s_prime_1, r_1, done = env.step(agent_1, a_1) #action 진행 후 state, reward, done 반환
-            agent.update_table(env.get_state(agent_1),a_1,r_1,s_prime_1, agent_1)
+            agent1.update_table(env.get_state(agent_1),a_1,r_1,s_prime_1, agent_1)
+
             walk+=1
-            p1rsum+=r_1
 
             if done == AGENT_1:
                 break
-            while True: #agent2 가능한 action 선택
-                a_2 = agent.select_action(env.get_state(agent_2), agent_2)
 
-                if a_2 in env.get_legal_action(env.get_state(agent_2)):
-                    break
+            a_2 = dumbagent_2.get_action()
 
             s_prime_2, r_2, done = env.step(agent_2,a_2)
             #agent.update_table(env.get_state(agent_2),a_2,r_2,s_prime_2, agent_2)
-            walk+=1
+            walk+=1 
+
+            if done == AGENT_2:
+                break
+
         if done == AGENT_1:
             p1win += 1
             print("episode :", sr, "The number of step : ", walk, "result : p1승리")
         elif done == AGENT_2:
             p2win += 1
             print("episode :", sr, "The number of step : ", walk, "result : p2승리")
+        else:
+            print("episode : break")
         sr+=1
 
-        agent.anneal_eps()
-    print("p1승리 : ", p1win, "| p2승리", p2win, "| p1 reward 합 : ",p1rsum)
+        agent1.anneal_eps()
+    print("p1승리 : ", p1win, "| p2승리", p2win)
     env.render(agent_1)
-    agent.show_table() # 학습이 끝난 결과를 출력
+
+    agent1.show_table() # 학습이 끝난 결과를 출력
+    np.save("C:/OSSP2/OSSP2/Seonuk-Working/100000_dumbagent_save", agent1.q_table_1)
 
 if __name__ == '__main__':
     main()
