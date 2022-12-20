@@ -207,9 +207,10 @@ class MCTS() :
         # loop over child nodes
         for child_node in node.children.values():
             # define current player
-            if child_node.env.last_played == AGENT_1 : current_player = 1
-            elif child_node.env.last_played == AGENT_2 : current_player = -1
+            if child_node.env.last_played == AGENT_2 : current_player = -1
+            elif child_node.env.last_played == AGENT_1 : current_player = 1
             
+            current_player = 1
             try:
                 # get move score using UCT formula  
                 move_score = current_player * child_node.score / child_node.visits + c_param * math.sqrt(math.log(node.visits / child_node.visits))                                       

@@ -15,5 +15,6 @@ class Agent():
 
             return best_action.get_action()
 
+
     def get_agent_num(self):
         return self.agent_num
