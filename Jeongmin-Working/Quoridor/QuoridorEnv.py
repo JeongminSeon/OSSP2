@@ -1,5 +1,5 @@
 import numpy as np
-from mcts_quoridor import *
+
 
 AGENT_1 = 100
 AGENT_2 = 200
@@ -58,6 +58,7 @@ class QuoridorEnv():
         if value_mode == -1:
             value_mode = self.value_mode
         self.__init__(width=width, value_mode=value_mode)
+        return self.get_state(300 - self.last_played)
 
     def get_legal_action(self, state=""):
         if (state == ""):
@@ -71,22 +72,22 @@ class QuoridorEnv():
         # N
         if (my_pos[1] >= width - 1):
             ret[ACT_MOVE_NORTH] = False
-        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1]]) or (my_pos[0] < width - 2 and state[0][0][my_pos[0]][my_pos[1]])):
+        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1]]) or (my_pos[0] < width - 1 and state[0][0][my_pos[0]][my_pos[1]])):
             ret[ACT_MOVE_NORTH] = False
         # W
         if (my_pos[0] == 0):
             ret[ACT_MOVE_WEST] = False
-        elif((my_pos[1] != 0 and state[0][1][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 2 and state[0][1][my_pos[0] - 1][my_pos[1]])):
+        elif ((my_pos[1] != 0 and state[0][1][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[1] < width - 1 and state[0][1][my_pos[0] - 1][my_pos[1]])):
             ret[ACT_MOVE_WEST] = False
         # S
         if (my_pos[1] == 0):
             ret[ACT_MOVE_SOUTH] = False
-        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 2 and state[0][0][my_pos[0]][my_pos[1] - 1])):
+        elif ((my_pos[0] != 0 and state[0][0][my_pos[0] - 1][my_pos[1] - 1]) or (my_pos[0] < width - 1 and state[0][0][my_pos[0]][my_pos[1] - 1])):
             ret[ACT_MOVE_SOUTH] = False
         # E
         if (my_pos[0] >= width - 1):
             ret[ACT_MOVE_EAST] = False
-        elif((my_pos[1] != 0 and state[0][1][my_pos[0]][my_pos[1] - 1]) or (my_pos[0] < width - 2 and state[0][1][my_pos[0]][my_pos[1]])):
+        elif ((my_pos[1] != 0 and state[0][1][my_pos[0]][my_pos[1] - 1]) or (my_pos[1] < width - 1 and state[0][1][my_pos[0]][my_pos[1]])):
             ret[ACT_MOVE_EAST] = False
 
         # 벽설치 가능 여부
@@ -108,12 +109,12 @@ class QuoridorEnv():
                     if (ret[ACT_MOVE_CNT + y * (width - 1) + x]):
                         tmp_map = state[0].copy()
                         tmp_map[0][x][y] = True
-                        if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
+                        if (self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
                             ret[ACT_MOVE_CNT + y * (width - 1) + x] = False
                     if (ret[ACT_MOVE_CNT + (width - 1) * (width - 1) + y * (width - 1) + x]):
                         tmp_map = state[0].copy()
                         tmp_map[1][x][y] = True
-                        if(self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
+                        if (self.ask_how_far((tmp_map, state[1])) == -1 or self.ask_how_far_opp((tmp_map, state[1])) == -1):
                             ret[ACT_MOVE_CNT + (width - 1) * (width - 1) +
                                 y * (width - 1) + x] = False
         else:
@@ -169,13 +170,23 @@ class QuoridorEnv():
 
                 # 플레이어 배치하는 파트
                 # p1 의 위치는 빨간색으로 표기
-                if(state[1][0][0] == j and state[1][0][1] == i):
-                    if (agent_num == AGENT_1):
-                        output.append('\033[42m' + ' 1 ' + '\033[0m')
+                if (state[1][0][0] == j and state[1][0][1] == i):
+                    if (state[1][1][0] == j and state[1][1][1] == i):
+                        if (agent_num == AGENT_1):
+                            output.append('\033[44m' + '1' + '\033[0m')
+                            output.append(' ')
+                            output.append('\033[42m' + '2' + '\033[0m')
+                        else:
+                            output.append('\033[42m' + '2' + '\033[0m')
+                            output.append(' ')
+                            output.append('\033[44m' + '1' + '\033[0m')
                     else:
-                        output.append('\033[44m' + ' 1 ' + '\033[0m')
+                        if (agent_num == AGENT_1):
+                            output.append('\033[42m' + ' 1 ' + '\033[0m')
+                        else:
+                            output.append('\033[44m' + ' 1 ' + '\033[0m')
                 # p2 의 위치는 파란색으로 표기
-                elif(state[1][1][0] == j and state[1][1][1] == i):
+                elif (state[1][1][0] == j and state[1][1][1] == i):
                     if (agent_num == AGENT_1):
                         output.append('\033[44m' + ' 2 ' + '\033[0m')
                     else:
@@ -232,8 +243,6 @@ class QuoridorEnv():
         elif (action < self.all_action.size):
             if agent_num == AGENT_1:
                 state[1][0][2] -= 1
-            else:
-                state[1][1][2] -= 1
             action -= ACT_MOVE_CNT
             state[0][action // ((width - 1) * (width - 1))][(action % ((width - 1)
                                                                        * (width - 1))) % (width - 1)][(action % ((width - 1) * (width - 1))) // (width - 1)] = True
@@ -301,26 +310,26 @@ class QuoridorEnv():
             for pos in stack:
                 # N
                 if (pos[1] < width - 1):
-                    if(not reached_map[pos[0]][pos[1] + 1]):
-                        if(not ((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1]]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1]]))):
+                    if (not reached_map[pos[0]][pos[1] + 1]):
+                        if (not ((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1]]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1]]))):
                             reached_map[pos[0]][pos[1] + 1] = True
                             next_stack.append((pos[0], pos[1] + 1))
                 # W
                 if (pos[0] != 0):
-                    if(not reached_map[pos[0] - 1][pos[1]]):
-                        if(not((pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]]))):
+                    if (not reached_map[pos[0] - 1][pos[1]]):
+                        if (not ((pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]]))):
                             reached_map[pos[0] - 1][pos[1]] = True
                             next_stack.append((pos[0] - 1, pos[1]))
                 # S
                 if (pos[1] != 0):
-                    if(not reached_map[pos[0]][pos[1] - 1]):
-                        if(not((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1]))):
+                    if (not reached_map[pos[0]][pos[1] - 1]):
+                        if (not ((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1]))):
                             reached_map[pos[0]][pos[1] - 1] = True
                             next_stack.append((pos[0], pos[1] - 1))
                 # E
                 if (pos[0] < width - 1):
-                    if(not reached_map[pos[0] + 1][pos[1]]):
-                        if(not((pos[1] != 0 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]]))):
+                    if (not reached_map[pos[0] + 1][pos[1]]):
+                        if (not ((pos[1] != 0 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]]))):
                             reached_map[pos[0] + 1][pos[1]] = True
                             next_stack.append((pos[0] + 1, pos[1]))
             # 종료상태에 도달한 것이 있는지 검사
@@ -348,26 +357,26 @@ class QuoridorEnv():
             for pos in stack:
                 # N
                 if (pos[1] < width - 1):
-                    if(not reached_map[pos[0]][pos[1] + 1]):
-                        if(not((pos[0] != 0 and pos[1] < width - 1 and state[0][0][pos[0] - 1][pos[1]]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1]]))):
+                    if (not reached_map[pos[0]][pos[1] + 1]):
+                        if (not ((pos[0] != 0 and pos[1] < width - 1 and state[0][0][pos[0] - 1][pos[1]]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1]]))):
                             reached_map[pos[0]][pos[1] + 1] = True
                             next_stack.append((pos[0], pos[1] + 1))
                 # W
                 if (pos[0] != 0):
-                    if(not reached_map[pos[0] - 1][pos[1]]):
-                        if(not((pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]]))):
+                    if (not reached_map[pos[0] - 1][pos[1]]):
+                        if (not ((pos[1] != 0 and state[0][1][pos[0] - 1][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0] - 1][pos[1]]))):
                             reached_map[pos[0] - 1][pos[1]] = True
                             next_stack.append((pos[0] - 1, pos[1]))
                 # S
                 if (pos[1] != 0):
-                    if(not reached_map[pos[0]][pos[1] - 1]):
-                        if(not((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1]))):
+                    if (not reached_map[pos[0]][pos[1] - 1]):
+                        if (not ((pos[0] != 0 and state[0][0][pos[0] - 1][pos[1] - 1]) or (pos[0] < width - 1 and state[0][0][pos[0]][pos[1] - 1]))):
                             reached_map[pos[0]][pos[1] - 1] = True
                             next_stack.append((pos[0], pos[1] - 1))
                 # E
                 if (pos[0] < (width - 1)):
                     if (not reached_map[pos[0] + 1][pos[1]]):
-                        if(not((pos[1] != 0 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]]))):
+                        if (not ((pos[1] != 0 and state[0][1][pos[0]][pos[1] - 1]) or (pos[1] < width - 1 and state[0][1][pos[0]][pos[1]]))):
                             reached_map[pos[0] + 1][pos[1]] = True
                             next_stack.append((pos[0] + 1, pos[1]))
             # 종료상태에 도달한 것이 있는지 검사
@@ -389,8 +398,11 @@ class QuoridorEnv():
         # 그외 -1
         isItEnd = self.ask_end_state((self.map, self.player_status))
         if (self.value_mode == 0):
-            if(isItEnd == 0):
-                return -1
+            if (isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):
+                    return -150
+                else:
+                    return -1
             elif (isItEnd == agent_num):
                 return 150
             else:
@@ -402,15 +414,17 @@ class QuoridorEnv():
         # 그외 y축 값에 따라 차등지급
         # 산식: reward = ($도착 라인과 거리 (벽무시)) * -1
         # ex) 5 x 5 게임판에서 (1, 2): -2, (3, 4): 200, (4, 3): -1
-        if(self.value_mode == 1):
-            if(isItEnd == 0):
-                if(agent_num == AGENT_1):
+        if (self.value_mode == 1):
+            if (isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -100
+                elif (agent_num == AGENT_1):  # 일반적인 state
                     return 1 + self.player_status[0][1] - self.width
                 else:
                     return -self.player_status[1][1]
-            elif (isItEnd == agent_num):
+            elif (isItEnd == agent_num):  # 나의 승리
                 return 100
-            else:
+            else:  # 상대방의 승리
                 return -100
 
         # 3.조금 더 복잡한 value_function
@@ -420,9 +434,11 @@ class QuoridorEnv():
         # 패배시 -1000
         # 그 외 "상대와 나의" y축 값에 따라 차등지급
         # 산식 reward = (상대의 end_line 과의 거리 (벽무시)) - (나의 end_line 과의 거리 (벽무시)) * 2 - 1
-        if(self.value_mode == 2):
-            if(isItEnd == 0):
-                if(agent_num == AGENT_1):
+        if (self.value_mode == 2):
+            if (isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -1000
+                if (agent_num == AGENT_1):
                     return self.player_status[1][1] - (self.width - 1 - self.player_status[0][1]) * 2 - 1
                 else:
                     return self.width - 1 - self.player_status[0][1] - self.player_status[1][1] * 2 - 1
@@ -437,9 +453,11 @@ class QuoridorEnv():
         # 승리시 1000
         # 패배시 -1000
         # 그 외  {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * -1
-        if(self.value_mode == 3):
-            if(isItEnd == 0):
-                if(agent_num == AGENT_1):
+        if (self.value_mode == 3):
+            if (isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -1000
+                if (agent_num == AGENT_1):
                     return -self.ask_how_far((self.map, self.player_status))
                 else:
                     return -self.ask_how_far_opp((self.map, self.player_status))
@@ -454,9 +472,11 @@ class QuoridorEnv():
         # 승리시 1000
         # 패배시 -1000
         # 그 외 {상대의 도착까지 남은 수} - {승리 조건까지 도달하기에 얼마나 남았는지 벽을 포함하여 연산한 값} * 2 -1
-        if(self.value_mode == 4):
-            if(isItEnd == 0):
-                if(agent_num == AGENT_1):
+        if (self.value_mode == 4):
+            if (isItEnd == 0):
+                if (self.ask_opponent_will_win(agent_num)):  # 상대방의 승리 직전
+                    return -1000
+                if (agent_num == AGENT_1):
                     return self.ask_how_far_opp((self.map, self.player_status)) - self.ask_how_far((self.map, self.player_status)) * 2 - 1
                 else:
                     return self.ask_how_far((self.map, self.player_status)) - self.ask_how_far_opp((self.map, self.player_status)) * 2 - 1
@@ -470,12 +490,34 @@ class QuoridorEnv():
     # 2: 입력된 state상에 state[1][1][]의 주인이 승리
 
     def ask_end_state(self, state):
-        if(state[1][0][1] == self.width-1):
+        if (state[1][0][1] == self.width-1):
             return AGENT_1
         elif (state[1][1][1] == 0):
             return AGENT_2
         else:
             return 0
+
+    def ask_opponent_will_win(self, agent_num):
+        width = self.width
+        if (agent_num == AGENT_1):  # p2의 승리임박을 확인
+            if (self.player_status[1][1] == 1):
+                if ((self.player_status[1][0] != 0 and self.map[0][self.player_status[1][0] - 1][0]) or (self.player_status[1][0] < width - 1 and self.map[0][self.player_status[1][0]][0])):
+                    return False
+                else:
+                    return True
+            else:
+                return False
+        elif (agent_num == AGENT_2):  # p1의 승리임박을 확인
+            if (self.player_status[0][1] == width-2):
+                if ((self.player_status[0][0] != 0 and self.map[0][self.player_status[0][0] - 1][width-2]) or (self.player_status[0][0] < width - 1 and self.map[0][self.player_status[0][0]][width-2])):
+                    return False
+                else:
+                    return True
+            else:
+                return False
+        else:
+            raise Exception(
+                'QuoridorEnv.ask_opponent_will_win()- agent_num 에러!\n잘못된 agent_num을 입력하였음!')
 
     def ask_state_changed(self):
         return self.state_changed
@@ -499,191 +541,3 @@ class QuoridorEnv():
 # print(q.get_legal_action(q.get_state(agent_1)))
 # g = QuoridorGUI(q)
 # g.startGame()
-
-
-# main driver
-if __name__ == '__main__':
-    # create board instance
-    q = QuoridorEnv(width = 5, value_mode= 0)
-    agent_1 = q.register_agent()
-    # print(agent_1)
-    agent_2 = q.register_agent()
-    # print(agent_2)
-
-    # print('last played : ', q.last_played)
-    # q.step(agent_2, 10)
-    # print(q.get_legal_action(q.get_state(agent_2)))
-    # print('last played : ', q.last_played)
-    # q.step(agent_1, 11)
-    # q.step(agent_1, 16)
-    # q.step(agent_1, 19)
-
-    # q.render(agent_1)
-    # print(q.get_legal_action(q.get_state(agent_1)))
-
-    #############################
-    #
-    #   exploration/explotation tradeoff with UCT
-    #
-    ##############################
-
-    # root = TreeNode(q, None)
-    # root.visits = 6
-    # root.score = 6
-    # print(root.env.last_played)
-
-    # move_1 = TreeNode(q, root, 0)
-    # move_1.visits = 4
-    # move_1.score = 4
-    # move_1.env.last_played = AGENT_1
-
-    # move_2 = TreeNode(q, root, 1)
-    # move_2.visits = 2
-    # move_2.score = 2
-    # move_2.env.last_played = AGENT_1
-
-    # root.children = {
-    #     'child_1' : move_1,
-    #     'child_2' : move_2
-    # }
-
-    mcts = MCTS()
-
-    # call get best move assuming search is finished (exploration constant = 0)
-    # best_move = mcts.get_best_move(root, 0)
-    # print(best_move.score)
-    # print(best_move.visits)
-
-    # q.step(agent_1, best_move.get_action())
-    # q.render(agent_1)
-    # print(q.last_played)
-
-    # node = mcts.expand(root)
-
-    # root.env.render(agent_1)
-    # print(root.env.last_played)
-
-    # node.env.render(agent_1)
-    # print(node.env.last_played)
-
-    ################################
-    #
-    #   search & exapnstion Test
-    #
-    #################################
-
-    # search 와 expand는 제대로 작동
-    # but 탐색 시간이 너무 오래걸림. get_legal_action을 매순간 구해야해서 그런건가 ?
-    # 중간 발표 이후로 개선할 필요가 있어보임
-    # depth = 1 만 search, expand 한후 best_moves에 저장 
-    # value = 0 으로 모든 벽 위치 위로 올라가는거나 똑같은 score로 계산.
-    # 그 중 랜덤으로 선택, 현재는 벽을 놓는 액션, pawn을 움직이는 액션이 랜덤으로 선택되는 중
-    
-    # best_move = mcts.search(q)
-    
-    # q.step(agent_1,best_move.get_action())
-    # q.render(agent_1)
-
-    # rollout policy 에 문제가 있는것 같음.
-    # index를 넘는 일이 발생
-    # pawn이 이동할 수 있는 모든 길을 막는 상황 존재
-    # 벽을 넘어 이동하는 경우 발생
-
-    # rollout 수정 필요
-
-    # count = 0
-    # while q.ask_end_state((q.map,q.player_status)) == False :
-    #     # find the best move
-    #     best_move = mcts.search(q)
-
-    #     # make the best action on env
-    #     print(best_move.get_action())
-    #     if count % 2 == 0:
-    #         q.step(agent_1,best_move.get_action())
-    #     else:
-    #         q.step(agent_2,best_move.get_action())
-
-    #     q.render(agent_1)
-    #     if q.ask_end_state((q.map,q.player_status)) :
-    #         print('게임 끝')
-    #     else:
-    #         print('게임 진행 중')
-    #     count += 1
-
-
-
-
-    ################################
-    #
-    #   backpropagation & FINAL RESULT demo
-    #
-    #################################
-
-
-    print('#########################################')
-
-    actions = q.get_legal_action(q.get_state(agent_1))
-
-    root_node = TreeNode(q,None)
-    node_copy = deepcopy(root_node)
-
-    # select 구현
-    while not root_node.is_terminal:
-        
-        if root_node.is_fully_expanded:
-            
-            # cuurent_player 설정
-            if root_node.env.last_played == AGENT_1 :
-                current_player = AGENT_2
-            else :
-                current_player = AGENT_1
-            
-                best_node = mcts.get_best_move(node_copy, 2)
-                print('best action : ', best_node.get_action())
-                best_node.env.render(agent_1)
-                node_copy.env.step(current_player, best_node.get_action())
-        
-        else: # expand
-            # cuurent_player 설정
-            if root_node.env.last_played == AGENT_1 :
-                current_player = AGENT_2
-            else :
-                current_player = AGENT_1
-            
-            actions = node_copy.env.get_legal_action(node_copy.env.get_state(current_player))
-           
-            for action in actions :
-                new_node = deepcopy(node_copy)
-
-                if action not in root_node.children:
-                    new_node.env.step(current_player,action)
-
-                    
-                    root_node.children[action] = new_node
-
-                    if len(actions) == len(root_node.children):
-                        root_node.is_fully_expanded = True
-                        print('모든 action에 대해 expansion 완료')
-                        break
-            
-        break
-
-    for child_node in root_node.children.values():
-        child_node.env.render(agent_1)
-        
-        input()
-
-    
-    
-    
-            
-                    
-
-            
-            
-        
-            
-    
-    
-
-
