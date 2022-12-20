@@ -1,5 +1,5 @@
 from QuoridorEnv import *
-from mcts_quoridor import *
+from MctsQuoridor import *
 
 class Agent():
     def __init__(self, env, agent_num) :

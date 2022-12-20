@@ -1,5 +1,5 @@
 from QuoridorEnv import *
-from mcts_quoridor import *
+from MctsQuoridor import *
 from MctsAgent import *
 from DumbAgent import DumbAgent
 
